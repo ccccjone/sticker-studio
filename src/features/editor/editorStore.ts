@@ -178,7 +178,9 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
       const { item, undoStack } = get()
       if (!item) return
       const r = clamp(radius, MIN_BRUSH_RADIUS, MAX_BRUSH_RADIUS)
-      const mask = item.mask ? item.mask : createMask(item.proxy.width, item.proxy.height, 255)
+      // 克隆再修改：保证 item.mask 引用只在内容真正变化时才变化，
+      // 让画布预览能用引用相等做 memo（拖动/缩放/旋转不重算像素）。
+      const mask = item.mask ? new Uint8Array(item.mask) : createMask(item.proxy.width, item.proxy.height, 255)
       const stroke = applyBrush(mask, item.proxy.width, item.proxy.height, cx, cy, r, mode)
       const target: 0 | 255 = mode === 'erase' ? 0 : 255
       const entry: UndoEntry = { kind: 'brush', changed: stroke.changed, target }
@@ -198,7 +200,10 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
       let baseline = item.removalBaseline
       let removal = item.params.removal
       if (entry.kind === 'brush') {
-        if (mask) for (const [p, prev] of entry.changed) mask[p] = prev
+        if (mask) {
+          mask = new Uint8Array(mask)
+          for (const [p, prev] of entry.changed) mask[p] = prev
+        }
       } else {
         mask = entry.before
         baseline = entry.beforeBaseline
@@ -220,7 +225,10 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
       let baseline = item.removalBaseline
       let removal = item.params.removal
       if (entry.kind === 'brush') {
-        if (mask) for (const [p] of entry.changed) mask[p] = entry.target
+        if (mask) {
+          mask = new Uint8Array(mask)
+          for (const [p] of entry.changed) mask[p] = entry.target
+        }
       } else {
         mask = entry.after
         baseline = entry.afterBaseline

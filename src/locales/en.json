@@ -35,6 +35,89 @@
   "single": {
     "title": "Single Image Processing"
   },
+  "upload": {
+    "title": "Upload an image",
+    "hint": "Click to browse, drag a file here, or paste (Ctrl/Cmd+V)",
+    "button": "Choose image",
+    "unsupportedType": "Unsupported image format. Please use PNG, JPEG or WebP.",
+    "tooLarge": "The image is larger than 20MB. Please compress it and try again.",
+    "decodeFailed": "Failed to decode this image. Please try a different file.",
+    "meta": {
+      "dimensions": "{{width}} × {{height}} px",
+      "alphaYes": "Has alpha channel",
+      "alphaNo": "No alpha channel"
+    }
+  },
+  "editor": {
+    "clearProject": "Clear project",
+    "clearConfirm": "Clear the current project? Unexported edits will be lost.",
+    "undo": "Undo",
+    "redo": "Redo",
+    "toolGroup": "Editing tools",
+    "brushSize": "Brush size",
+    "tool": {
+      "pan": "Pan",
+      "erase": "Erase",
+      "restore": "Restore",
+      "eyedropper": "Eyedropper"
+    },
+    "status": {
+      "zoom": "Zoom {{percent}}%",
+      "canvasSize": "Canvas {{width}} × {{height}}"
+    },
+    "removal": {
+      "title": "Background removal",
+      "seedHint": "Pick the “Eyedropper” tool and click on the canvas to sample a color",
+      "autoSeed": "Auto sample",
+      "tolerance": "Tolerance",
+      "softness": "Edge softness",
+      "apply": "Apply",
+      "reset": "Reset mask"
+    },
+    "canvasSize": {
+      "title": "Canvas size",
+      "width": "Width",
+      "height": "Height",
+      "lockAspect": "Lock aspect ratio"
+    },
+    "transform": {
+      "title": "Position & scale",
+      "contain": "Contain",
+      "cover": "Cover",
+      "scale": "Scale",
+      "rotateLeft": "Rotate -90°",
+      "rotateRight": "Rotate 90°",
+      "flipH": "Flip horizontal",
+      "flipV": "Flip vertical",
+      "center": "Center",
+      "fitSubject": "Auto-fit subject"
+    },
+    "outline": {
+      "title": "Outline",
+      "enable": "Enable",
+      "color": "Color",
+      "width": "Width",
+      "exportOnlyHint": "The outline only appears in the exported image, not in this live preview."
+    },
+    "previewBg": {
+      "title": "Preview background",
+      "checkerboard": "Checkerboard",
+      "white": "White",
+      "black": "Black",
+      "gray": "Gray",
+      "custom": "Custom"
+    },
+    "export": {
+      "title": "Export",
+      "jpegBg": "Background color",
+      "jpegAlphaWarning": "JPEG doesn't support transparency; transparent areas will be filled with the chosen background color.",
+      "fileName": "File name",
+      "summary": "Output {{width}} × {{height}} px · {{format}} · {{transparency}}",
+      "transparentYes": "Transparent",
+      "transparentNo": "Opaque",
+      "button": "Export image"
+    }
+  },
   "batch": {
     "title": "Batch Processing"
   },

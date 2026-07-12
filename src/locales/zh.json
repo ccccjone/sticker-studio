@@ -35,6 +35,89 @@
   "single": {
     "title": "单张图片处理"
   },
+  "upload": {
+    "title": "上传图片",
+    "hint": "点击选择、拖拽图片到此处，或直接粘贴（Ctrl/Cmd+V）",
+    "button": "选择图片",
+    "unsupportedType": "不支持的图片格式，请使用 PNG / JPEG / WebP",
+    "tooLarge": "图片大小超过 20MB，请压缩后重试",
+    "decodeFailed": "图片解码失败，请更换图片重试",
+    "meta": {
+      "dimensions": "{{width}} × {{height}} px",
+      "alphaYes": "含透明通道",
+      "alphaNo": "不含透明通道"
+    }
+  },
+  "editor": {
+    "clearProject": "清除当前项目",
+    "clearConfirm": "确定要清除当前项目吗？未导出的编辑内容将丢失。",
+    "undo": "撤销",
+    "redo": "重做",
+    "toolGroup": "编辑工具",
+    "brushSize": "画笔大小",
+    "tool": {
+      "pan": "拖动",
+      "erase": "擦除",
+      "restore": "恢复",
+      "eyedropper": "吸管"
+    },
+    "status": {
+      "zoom": "缩放 {{percent}}%",
+      "canvasSize": "画布 {{width}} × {{height}}"
+    },
+    "removal": {
+      "title": "去背景",
+      "seedHint": "选择“吸管”工具后在画布上点击取色",
+      "autoSeed": "自动取色",
+      "tolerance": "容差",
+      "softness": "边缘柔化",
+      "apply": "应用",
+      "reset": "重置蒙版"
+    },
+    "canvasSize": {
+      "title": "画布尺寸",
+      "width": "宽",
+      "height": "高",
+      "lockAspect": "锁定比例"
+    },
+    "transform": {
+      "title": "位置与缩放",
+      "contain": "完整显示",
+      "cover": "填满画布",
+      "scale": "缩放",
+      "rotateLeft": "逆时针 90°",
+      "rotateRight": "顺时针 90°",
+      "flipH": "水平翻转",
+      "flipV": "垂直翻转",
+      "center": "一键居中",
+      "fitSubject": "自动适应主体"
+    },
+    "outline": {
+      "title": "描边",
+      "enable": "启用",
+      "color": "颜色",
+      "width": "宽度",
+      "exportOnlyHint": "描边效果仅在导出结果中生效，画布预览不实时显示。"
+    },
+    "previewBg": {
+      "title": "预览背景",
+      "checkerboard": "棋盘格",
+      "white": "白色",
+      "black": "黑色",
+      "gray": "灰色",
+      "custom": "自定义"
+    },
+    "export": {
+      "title": "导出",
+      "jpegBg": "背景色",
+      "jpegAlphaWarning": "JPEG 不支持透明背景，透明区域将被填充为所选背景色。",
+      "fileName": "文件名",
+      "summary": "输出 {{width}} × {{height}} px · {{format}} · {{transparency}}",
+      "transparentYes": "含透明",
+      "transparentNo": "不透明",
+      "button": "导出图片"
+    }
+  },
   "batch": {
     "title": "批量处理图片"
   },
