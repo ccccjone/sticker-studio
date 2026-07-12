@@ -12,6 +12,7 @@ vi.mock('react-konva', () => ({
   Layer: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   Group: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   Image: () => <div data-testid="konva-image" />,
+  Rect: () => <div data-testid="konva-rect" />,
 }))
 
 const { SingleEditorPage } = await import('../SingleEditorPage')

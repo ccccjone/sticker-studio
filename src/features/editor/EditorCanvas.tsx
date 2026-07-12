@@ -6,7 +6,7 @@
 
 import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Group, Image as KonvaImage, Layer, Stage } from 'react-konva'
+import { Group, Image as KonvaImage, Layer, Rect, Stage } from 'react-konva'
 import type Konva from 'konva'
 import { rasterToCanvas } from '../../canvas/encode'
 import { Button } from '../../components/Button'
@@ -14,6 +14,7 @@ import { Chip } from '../../components/Chip'
 import { Icon, type IconName } from '../../components/Icon'
 import { composeAlpha } from '../../core/mask'
 import { useEditorContext } from './EditorContext'
+import { fitView } from './viewportMath'
 
 type Tool = 'pan' | 'erase' | 'restore' | 'eyedropper'
 
@@ -60,6 +61,13 @@ export function EditorCanvas() {
   const { transform, canvasW, canvasH } = item.params
   const pw = item.proxy.width
   const ph = item.proxy.height
+  // transform.scale 是"原图 → 画布"的缩放；预览绘制的是 proxy，需补偿两者的分辨率差
+  const proxyComp = item.image.width / pw
+  const view = fitView(canvasW, canvasH, stageW, stageH, 16)
+  const boundsX = view.viewX
+  const boundsY = view.viewY
+  const boundsW = canvasW * view.viewScale
+  const boundsH = canvasH * view.viewScale
 
   function localPointFromEvent(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): { x: number; y: number } | null {
     const stage = e.target.getStage()
@@ -155,32 +163,42 @@ export function EditorCanvas() {
           onTouchEnd={handlePointerUp}
         >
           <Layer>
-            {/* 输出画布边界，导出范围以外的部分预览时用半透明遮罩提示会被裁掉 */}
-            <Group
-              x={transform.dx}
-              y={transform.dy}
-              scaleX={transform.scale}
-              scaleY={transform.scale}
-              draggable={tool === 'pan'}
-              onDragEnd={(e) => actions.setPan(e.target.x(), e.target.y())}
-            >
+            {/* 视口：把导出画布等比缩放居中到 Stage；内部坐标仍是画布像素 */}
+            <Group x={view.viewX} y={view.viewY} scaleX={view.viewScale} scaleY={view.viewScale}>
               <Group
-                rotation={transform.rotation}
-                x={transform.rotation === 90 ? ph : transform.rotation === 180 ? pw : transform.rotation === 270 ? 0 : 0}
-                y={transform.rotation === 90 ? 0 : transform.rotation === 180 ? ph : transform.rotation === 270 ? pw : 0}
+                x={transform.dx}
+                y={transform.dy}
+                scaleX={transform.scale * proxyComp}
+                scaleY={transform.scale * proxyComp}
+                draggable={tool === 'pan'}
+                onDragEnd={(e) => actions.setPan(e.target.x(), e.target.y())}
               >
                 <Group
-                  scaleX={transform.flipX ? -1 : 1}
-                  scaleY={transform.flipY ? -1 : 1}
-                  x={transform.flipX ? pw : 0}
-                  y={transform.flipY ? ph : 0}
+                  rotation={transform.rotation}
+                  x={transform.rotation === 90 ? ph : transform.rotation === 180 ? pw : transform.rotation === 270 ? 0 : 0}
+                  y={transform.rotation === 90 ? 0 : transform.rotation === 180 ? ph : transform.rotation === 270 ? pw : 0}
                 >
-                  {previewCanvas && (
-                    <KonvaImage ref={imageRef} image={previewCanvas} width={pw} height={ph} />
-                  )}
+                  <Group
+                    scaleX={transform.flipX ? -1 : 1}
+                    scaleY={transform.flipY ? -1 : 1}
+                    x={transform.flipX ? pw : 0}
+                    y={transform.flipY ? ph : 0}
+                  >
+                    {previewCanvas && (
+                      <KonvaImage ref={imageRef} image={previewCanvas} width={pw} height={ph} />
+                    )}
+                  </Group>
                 </Group>
               </Group>
             </Group>
+          </Layer>
+          {/* 画布边界：画布外区域半透明遮罩提示导出时会被裁掉 + 1px 边框 */}
+          <Layer listening={false}>
+            <Rect x={0} y={0} width={stageW} height={boundsY} fill="rgba(24,24,27,0.45)" />
+            <Rect x={0} y={boundsY + boundsH} width={stageW} height={stageH - boundsY - boundsH} fill="rgba(24,24,27,0.45)" />
+            <Rect x={0} y={boundsY} width={boundsX} height={boundsH} fill="rgba(24,24,27,0.45)" />
+            <Rect x={boundsX + boundsW} y={boundsY} width={stageW - boundsX - boundsW} height={boundsH} fill="rgba(24,24,27,0.45)" />
+            <Rect x={boundsX} y={boundsY} width={boundsW} height={boundsH} stroke="rgba(113,113,122,0.9)" strokeWidth={1} />
           </Layer>
         </Stage>
       </div>
