@@ -30,6 +30,21 @@
         "title": "Sticker Prompt Guide",
         "desc": "Character, style and mood libraries with a copy-ready AI prompt builder."
       }
+    },
+    "how": {
+      "title": "Three steps",
+      "upload": {
+        "title": "Upload",
+        "desc": "Drag, paste, or pick a file"
+      },
+      "process": {
+        "title": "Auto background removal",
+        "desc": "Applied on upload; tweak and re-apply anytime"
+      },
+      "export": {
+        "title": "Export stickers",
+        "desc": "True-transparent PNG, or a batch ZIP"
+      }
     }
   },
   "single": {
@@ -252,7 +267,12 @@
       },
       "background": {
         "title": "Recommended background colors",
-        "items": ["Medium gray", "Pure green", "Pure blue", "Any soft but uniform solid color"],
+        "items": [
+          "Medium gray",
+          "Pure green",
+          "Pure blue",
+          "Any soft but uniform solid color"
+        ],
         "warning": "Avoid near-white backgrounds — the white outline and the background become hard to separate."
       }
     },
@@ -263,17 +283,28 @@
         "customLabel": "Custom character description",
         "customPlaceholder": "e.g. a water-drop character with a blue bow"
       },
-      "style": { "label": "Drawing style" },
-      "arrangement": { "label": "Arrangement" },
+      "style": {
+        "label": "Drawing style"
+      },
+      "arrangement": {
+        "label": "Arrangement"
+      },
       "moods": {
         "label": "Select moods (multiple)",
         "selectedCount": "{{count}} selected",
         "toggleGroup": "Expand or collapse “{{group}}”"
       },
-      "outline": { "label": "White outline (helps later splitting)" },
-      "output": { "title": "Generated prompt" },
+      "outline": {
+        "label": "White outline (helps later splitting)"
+      },
+      "output": {
+        "title": "Generated prompt"
+      },
       "copy": "Copy prompt",
       "copied": "Copied"
     }
+  },
+  "footer": {
+    "local": "All images are processed locally in your browser"
   }
 }

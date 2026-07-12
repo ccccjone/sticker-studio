@@ -30,6 +30,21 @@
         "title": "表情包生成指南",
         "desc": "角色、风格与情绪词库，一键生成可复制的 AI Prompt。"
       }
+    },
+    "how": {
+      "title": "三步完成",
+      "upload": {
+        "title": "上传图片",
+        "desc": "拖拽、粘贴或选择文件"
+      },
+      "process": {
+        "title": "自动去背景",
+        "desc": "上传即自动处理，可调参数重新应用"
+      },
+      "export": {
+        "title": "导出贴纸",
+        "desc": "真透明 PNG，或 ZIP 批量打包"
+      }
     }
   },
   "single": {
@@ -252,7 +267,12 @@
       },
       "background": {
         "title": "推荐背景色",
-        "items": ["中等灰色", "纯绿色", "纯蓝色", "柔和但均匀的单色"],
+        "items": [
+          "中等灰色",
+          "纯绿色",
+          "纯蓝色",
+          "柔和但均匀的单色"
+        ],
         "warning": "不要使用接近白色的背景，因为白边和背景会难以分离。"
       }
     },
@@ -263,17 +283,28 @@
         "customLabel": "自定义角色描述",
         "customPlaceholder": "例如：戴着蓝色蝴蝶结的水滴角色"
       },
-      "style": { "label": "绘画风格" },
-      "arrangement": { "label": "排列方式" },
+      "style": {
+        "label": "绘画风格"
+      },
+      "arrangement": {
+        "label": "排列方式"
+      },
       "moods": {
         "label": "选择情绪（可多选）",
         "selectedCount": "已选 {{count}} 个",
         "toggleGroup": "展开或收起「{{group}}」"
       },
-      "outline": { "label": "白色描边（有助于后续拆分）" },
-      "output": { "title": "生成的 Prompt" },
+      "outline": {
+        "label": "白色描边（有助于后续拆分）"
+      },
+      "output": {
+        "title": "生成的 Prompt"
+      },
       "copy": "复制 Prompt",
       "copied": "已复制"
     }
+  },
+  "footer": {
+    "local": "所有图片仅在您的浏览器本地处理"
   }
 }
