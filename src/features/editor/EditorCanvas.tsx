@@ -4,7 +4,7 @@
  * 拖动/缩放/旋转只改变 Konva 节点属性，不重算像素。
  */
 
-import { useMemo, useRef, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Group, Image as KonvaImage, Layer, Rect, Stage } from 'react-konva'
 import type Konva from 'konva'
@@ -39,8 +39,19 @@ export function EditorCanvas() {
   const imageRef = useRef<Konva.Image>(null)
   const painting = useRef(false)
 
-  const stageW = 480
+  // Stage 宽度跟随容器（flex 列里容器会被拉伸到全宽），否则画布外遮罩盖不满预览区
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const [stageW, setStageW] = useState(480)
   const stageH = 480
+  useLayoutEffect(() => {
+    const el = wrapperRef.current
+    if (!el) return
+    const measure = () => setStageW(el.clientWidth || 480)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   // 有意只依赖 proxy 与 mask 的引用（而非整个 item）：transform 相关的 action
   // 不会替换这两者的引用，因此拖动/缩放/旋转不会触发这里重算像素。
@@ -148,7 +159,8 @@ export function EditorCanvas() {
       </div>
 
       <div
-        className={`inline-block overflow-hidden rounded-2xl border border-zinc-200 ${previewBgClass}`}
+        ref={wrapperRef}
+        className={`overflow-hidden rounded-2xl border border-zinc-200 ${previewBgClass}`}
         style={previewBgStyle}
       >
         <Stage
