@@ -1,0 +1,47 @@
+{
+  "app": {
+    "name": "Sticker Studio",
+    "tagline": "Sticker Workshop"
+  },
+  "nav": {
+    "home": "Home",
+    "single": "Single Image",
+    "batch": "Batch",
+    "split": "Sheet Splitter",
+    "guide": "Prompt Guide"
+  },
+  "home": {
+    "intro": "In-browser tool for AI stickers and transparent images: remove backgrounds, unify sizes, split sticker sheets, export in bulk.",
+    "privacy": "Images are processed locally in your browser by default and are never uploaded to our servers.",
+    "entries": {
+      "single": {
+        "title": "Single Image Processing",
+        "desc": "Upload an image, remove its background, resize and export a true transparent PNG."
+      },
+      "batch": {
+        "title": "Batch Processing",
+        "desc": "Process multiple images at once with shared settings and a ZIP download."
+      },
+      "split": {
+        "title": "Split a Sticker Sheet",
+        "desc": "Split one multi-sticker image into standalone stickers and export them separately."
+      },
+      "guide": {
+        "title": "Sticker Prompt Guide",
+        "desc": "Character, style and mood libraries with a copy-ready AI prompt builder."
+      }
+    }
+  },
+  "single": {
+    "title": "Single Image Processing"
+  },
+  "batch": {
+    "title": "Batch Processing"
+  },
+  "split": {
+    "title": "Split a Sticker Sheet"
+  },
+  "guide": {
+    "title": "Sticker Prompt Guide"
+  }
+}
