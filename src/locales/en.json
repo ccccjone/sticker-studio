@@ -213,6 +213,66 @@
     }
   },
   "guide": {
-    "title": "Sticker Prompt Guide"
+    "title": "Sticker Prompt Guide",
+    "intro": "Helps you write AI prompts — for ChatGPT, Gemini and similar tools — that keep the character consistent and are easier to split and de-background afterwards.",
+    "steps": {
+      "character": {
+        "title": "Step 1: Define the character",
+        "body": "Decide the character type, age feel, hairstyle, outfit, main and accent colors, body proportions, personality, and any fixed props. Generate and confirm a single reference image first, then generate the whole set of expressions from that same reference — don't generate dozens of expressions right away."
+      },
+      "style": {
+        "title": "Step 2: Pick a drawing style",
+        "body": "Choose one style from the soft, simple, cute, or other word groups and keep it consistent across the whole set.",
+        "tip": "Complex watercolor, translucent shadows, and soft hair edges are harder to remove backgrounds from. Simple line art, flat outlines, and a clean white border are much easier to split."
+      },
+      "mood": {
+        "title": "Step 3: Pick moods and actions",
+        "body": "Check the moods you want from the word library — these words can also be reused as export file names. The default prompt requires no text anywhere in the image."
+      },
+      "composition": {
+        "title": "Step 4: Composition rules",
+        "body": "A single sticker per generation gives a bigger character, sharper detail, and is easier to de-background, but needs more generations. A regular grid (2×2/2×4/3×3/4×4) produces many stickers at once, but the prompt must require exactly one complete character per cell, no overlap, no cropping, and no divider lines."
+      },
+      "outlineBg": {
+        "title": "Step 5: White outline & background",
+        "body": "A white or high-contrast sticker outline clarifies the subject boundary and merges small decorations with the character into one piece, which makes automated splitting easier. Generate against a solid mid-tone background and let this site turn it into true transparency during background removal."
+      }
+    },
+    "tips": {
+      "outline": {
+        "title": "Preconditions for outlines to help splitting",
+        "items": [
+          "The outline must be fully closed",
+          "Every element must sit inside the outline",
+          "The background color outside the outline must clearly differ from the outline itself",
+          "Different stickers must never be connected through their outlines",
+          "There must be enough space between stickers"
+        ]
+      },
+      "background": {
+        "title": "Recommended background colors",
+        "items": ["Medium gray", "Pure green", "Pure blue", "Any soft but uniform solid color"],
+        "warning": "Avoid near-white backgrounds — the white outline and the background become hard to separate."
+      }
+    },
+    "builder": {
+      "title": "Prompt builder",
+      "character": {
+        "label": "Character type",
+        "customLabel": "Custom character description",
+        "customPlaceholder": "e.g. a water-drop character with a blue bow"
+      },
+      "style": { "label": "Drawing style" },
+      "arrangement": { "label": "Arrangement" },
+      "moods": {
+        "label": "Select moods (multiple)",
+        "selectedCount": "{{count}} selected",
+        "toggleGroup": "Expand or collapse “{{group}}”"
+      },
+      "outline": { "label": "White outline (helps later splitting)" },
+      "output": { "title": "Generated prompt" },
+      "copy": "Copy prompt",
+      "copied": "Copied"
+    }
   }
 }
