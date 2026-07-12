@@ -8,6 +8,7 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { rasterToCanvas } from '../../canvas/encode'
+import { Icon } from '../../components/Icon'
 import { useBatchStore, type BatchItem, type BatchStatus } from './batchStore'
 import type { RasterImage } from '../../core/raster'
 
@@ -29,10 +30,10 @@ function Thumbnail({ proxy }: { proxy: RasterImage }) {
   if (!dataUrl) {
     return (
       <div
-        className="checkerboard flex h-12 w-12 shrink-0 items-center justify-center rounded text-lg"
+        className="checkerboard flex h-12 w-12 shrink-0 items-center justify-center rounded-lg text-zinc-400"
         aria-hidden
       >
-        🖼️
+        <Icon name="image" size={18} />
       </div>
     )
   }
@@ -54,7 +55,7 @@ export function ThumbnailList() {
   const allSelected = items.every((it) => it.selected)
 
   return (
-    <section className="flex w-64 shrink-0 flex-col gap-2 rounded-lg border border-zinc-200 bg-white p-3">
+    <section className="flex w-64 shrink-0 flex-col gap-2 rounded-2xl border border-zinc-200/80 bg-white p-3 shadow-card">
       <div className="flex items-center justify-between text-sm">
         <label className="flex items-center gap-2 text-zinc-600">
           <input type="checkbox" checked={allSelected} onChange={(e) => actions.selectAll(e.target.checked)} />

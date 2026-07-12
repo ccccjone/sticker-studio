@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { Panel } from '../../../components/Panel'
 import { useEditorContext } from '../EditorContext'
 
 function rgbToHex([r, g, b]: [number, number, number, number]): string {
@@ -18,9 +19,9 @@ export function OutlinePanel() {
   const { outline, outlineEnabled } = item
 
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white p-4">
-      <h2 className="mb-3 flex items-center justify-between text-sm font-semibold text-zinc-700">
-        {t('editor.outline.title')}
+    <Panel
+      title={t('editor.outline.title')}
+      action={
         <label className="flex items-center gap-1 text-xs font-normal text-zinc-500">
           <input
             type="checkbox"
@@ -29,7 +30,8 @@ export function OutlinePanel() {
           />
           {t('editor.outline.enable')}
         </label>
-      </h2>
+      }
+    >
 
       <label className="mb-3 flex items-center gap-2 text-sm">
         {t('editor.outline.color')}
@@ -55,6 +57,6 @@ export function OutlinePanel() {
       </label>
 
       <p className="text-xs text-zinc-400">{t('editor.outline.exportOnlyHint')}</p>
-    </section>
+    </Panel>
   )
 }

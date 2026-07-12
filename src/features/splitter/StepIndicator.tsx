@@ -7,6 +7,7 @@
  */
 
 import { useTranslation } from 'react-i18next'
+import { Icon } from '../../components/Icon'
 import { STEP_ORDER, useSplitterStore, type SplitStep } from './splitterStore'
 
 const STEP_LABELS: Record<SplitStep, string> = {
@@ -36,25 +37,29 @@ export function StepIndicator() {
         const isReachable = reachable(s)
         return (
           <li key={s} className="flex items-center gap-2">
-            {i > 0 && (
-              <span aria-hidden className="text-zinc-300">
-                →
-              </span>
-            )}
+            {i > 0 && <Icon aria-hidden name="chevronRight" size={14} className="text-zinc-300" />}
             <button
               type="button"
               disabled={!isReachable}
+              aria-label={`${i + 1}. ${t(STEP_LABELS[s])}`}
               aria-current={isActive ? 'step' : undefined}
               onClick={() => actions.goToStep(s)}
-              className={`rounded-full px-3 py-1 ${
+              className={`flex items-center gap-1.5 rounded-full py-1 pl-1.5 pr-3 transition-colors ${
                 isActive
-                  ? 'bg-violet-600 text-white'
+                  ? 'bg-primary font-medium text-white'
                   : isReachable
                     ? 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
                     : 'cursor-not-allowed bg-zinc-50 text-zinc-300'
               }`}
             >
-              {i + 1}. {t(STEP_LABELS[s])}
+              <span
+                className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold ${
+                  isActive ? 'bg-white/25 text-white' : isReachable ? 'bg-white text-zinc-500' : 'bg-white text-zinc-300'
+                }`}
+              >
+                {i + 1}
+              </span>
+              {t(STEP_LABELS[s])}
             </button>
           </li>
         )

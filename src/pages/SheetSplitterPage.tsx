@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Button } from '../components/Button'
 import { EditorCanvas } from '../features/editor/EditorCanvas'
 import { EditorContext } from '../features/editor/EditorContext'
 import { CanvasSizePanel } from '../features/editor/panels/CanvasSizePanel'
@@ -39,15 +40,16 @@ function ClearButton() {
   const { t } = useTranslation()
   const actions = useSplitterStore((s) => s.actions)
   return (
-    <button
-      type="button"
+    <Button
+      variant="danger"
+      size="sm"
+      icon="trash"
       onClick={() => {
         if (window.confirm(t('editor.clearConfirm'))) actions.clear()
       }}
-      className="rounded-md bg-red-50 px-3 py-1.5 text-sm text-red-600 hover:bg-red-100"
     >
       {t('editor.clearProject')}
-    </button>
+    </Button>
   )
 }
 
@@ -68,14 +70,9 @@ function SelectStep() {
       <div className="flex w-full shrink-0 flex-col gap-4 lg:w-80">
         <ArrangementPicker />
         <GridControls />
-        <button
-          type="button"
-          disabled={boxes.length === 0}
-          onClick={handleSplit}
-          className="rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-40"
-        >
+        <Button variant="primary" icon="scissors" disabled={boxes.length === 0} onClick={handleSplit}>
           {t('split.splitButton', { count: boxes.length })}
-        </button>
+        </Button>
         <ClearButton />
       </div>
       <div className="min-w-0 flex-1">
@@ -91,13 +88,9 @@ function EditStep() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <button
-          type="button"
-          onClick={() => actions.goToStep('export')}
-          className="rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700"
-        >
+        <Button variant="primary" icon="arrowRight" onClick={() => actions.goToStep('export')}>
           {t('split.toExport')}
-        </button>
+        </Button>
         <ClearButton />
       </div>
       <div className="flex flex-col gap-4 lg:flex-row">
@@ -138,7 +131,7 @@ export function SheetSplitterPage() {
   const { t } = useTranslation()
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-bold">{t('split.title')}</h1>
+      <h1 className="mb-4 text-2xl font-bold tracking-tight text-zinc-900">{t('split.title')}</h1>
       <SplitterEditorBridge>
         <StepIndicator />
         <SplitterWorkspace />

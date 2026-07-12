@@ -5,6 +5,7 @@
 
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Icon } from '../../components/Icon'
 import { rasterToCanvas } from '../../canvas/encode'
 import type { RasterImage } from '../../core/raster'
 import { useSplitterStore, type SplitterPiece } from './splitterStore'
@@ -19,8 +20,8 @@ function Thumbnail({ proxy }: { proxy: RasterImage }) {
   }, [proxy])
   if (!dataUrl) {
     return (
-      <div className="checkerboard flex h-16 w-16 shrink-0 items-center justify-center rounded text-lg" aria-hidden>
-        🖼️
+      <div className="checkerboard flex h-16 w-16 shrink-0 items-center justify-center rounded-lg text-zinc-400" aria-hidden>
+        <Icon name="image" size={20} />
       </div>
     )
   }
@@ -42,7 +43,7 @@ export function PieceGrid() {
   const allSelected = pieces.every((p) => p.selected)
 
   return (
-    <section className="flex w-full shrink-0 flex-col gap-2 rounded-lg border border-zinc-200 bg-white p-3 lg:w-72">
+    <section className="flex w-full shrink-0 flex-col gap-2 rounded-2xl border border-zinc-200/80 bg-white p-3 shadow-card lg:w-72">
       <div className="flex items-center justify-between text-sm">
         <label className="flex items-center gap-2 text-zinc-600">
           <input type="checkbox" checked={allSelected} onChange={(e) => actions.selectAllPieces(e.target.checked)} />

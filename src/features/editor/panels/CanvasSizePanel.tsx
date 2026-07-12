@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next'
+import { Chip } from '../../../components/Chip'
+import { Panel } from '../../../components/Panel'
 import type { CanvasPreset } from '../types'
 import { useEditorContext } from '../EditorContext'
 
@@ -11,24 +13,13 @@ export function CanvasSizePanel() {
   const { canvasW, canvasH } = item.params
 
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white p-4">
-      <h2 className="mb-3 text-sm font-semibold text-zinc-700">{t('editor.canvasSize.title')}</h2>
+    <Panel title={t('editor.canvasSize.title')}>
 
       <div className="mb-3 flex flex-wrap gap-2">
         {PRESETS.map((size) => (
-          <button
-            key={size}
-            type="button"
-            aria-pressed={canvasW === size && canvasH === size}
-            onClick={() => actions.setCanvasPreset(size)}
-            className={`rounded-md px-2 py-1 text-sm ${
-              canvasW === size && canvasH === size
-                ? 'bg-violet-600 text-white'
-                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-            }`}
-          >
+          <Chip key={size} selected={canvasW === size && canvasH === size} onClick={() => actions.setCanvasPreset(size)}>
             {size}
-          </button>
+          </Chip>
         ))}
       </div>
 
@@ -41,7 +32,7 @@ export function CanvasSizePanel() {
             max={4096}
             value={canvasW}
             onChange={(e) => actions.setCanvasWidth(Number(e.target.value))}
-            className="mt-1 w-24 rounded-md border border-zinc-300 px-2 py-1"
+            className="mt-1 w-24 rounded-lg border border-zinc-300 px-2 py-1"
           />
         </label>
         <label className="flex flex-col text-sm">
@@ -52,10 +43,10 @@ export function CanvasSizePanel() {
             max={4096}
             value={canvasH}
             onChange={(e) => actions.setCanvasHeight(Number(e.target.value))}
-            className="mt-1 w-24 rounded-md border border-zinc-300 px-2 py-1"
+            className="mt-1 w-24 rounded-lg border border-zinc-300 px-2 py-1"
           />
         </label>
-        <label className="mb-2 flex items-center gap-1 text-sm text-zinc-600">
+        <label className="mb-2 flex items-center gap-1 whitespace-nowrap text-sm text-zinc-600">
           <input
             type="checkbox"
             checked={item.lockAspect}
@@ -64,6 +55,6 @@ export function CanvasSizePanel() {
           {t('editor.canvasSize.lockAspect')}
         </label>
       </div>
-    </section>
+    </Panel>
   )
 }

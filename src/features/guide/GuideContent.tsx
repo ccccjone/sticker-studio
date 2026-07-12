@@ -18,13 +18,19 @@ export function GuideContent() {
 
       <ol className="space-y-4">
         {STEP_KEYS.map((key, i) => (
-          <li key={key} className="rounded-lg border border-zinc-200 bg-white p-4">
-            <h2 className="text-sm font-semibold text-zinc-700">
-              {i + 1}. {t(`guide.steps.${key}.title`)}
+          <li key={key} className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-card">
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-zinc-700">
+              <span
+                aria-hidden
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-soft text-[11px] font-bold text-primary-strong"
+              >
+                {i + 1}
+              </span>
+              {t(`guide.steps.${key}.title`)}
             </h2>
             <p className="mt-2 text-sm text-zinc-600">{t(`guide.steps.${key}.body`)}</p>
             {key === 'style' && (
-              <p className="mt-2 rounded-md bg-amber-50 p-2 text-xs text-amber-700">
+              <p className="mt-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-700">
                 {t('guide.steps.style.tip')}
               </p>
             )}
@@ -33,7 +39,7 @@ export function GuideContent() {
       </ol>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <section className="rounded-lg border border-zinc-200 bg-white p-4">
+        <section className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-card">
           <h3 className="text-sm font-semibold text-zinc-700">{t('guide.tips.outline.title')}</h3>
           <ol className="mt-2 list-decimal space-y-1 pl-4 text-sm text-zinc-600">
             {outlineItems.map((item) => (
@@ -42,14 +48,14 @@ export function GuideContent() {
           </ol>
         </section>
 
-        <section className="rounded-lg border border-zinc-200 bg-white p-4">
+        <section className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-card">
           <h3 className="text-sm font-semibold text-zinc-700">{t('guide.tips.background.title')}</h3>
           <ul className="mt-2 list-disc space-y-1 pl-4 text-sm text-zinc-600">
             {backgroundItems.map((item) => (
               <li key={item}>{item}</li>
             ))}
           </ul>
-          <p className="mt-2 rounded-md bg-amber-50 p-2 text-xs text-amber-700">
+          <p className="mt-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-700">
             {t('guide.tips.background.warning')}
           </p>
         </section>

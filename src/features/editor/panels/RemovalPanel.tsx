@@ -1,5 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { sampleCorners } from '../../../core/removal'
+import { Button } from '../../../components/Button'
+import { Panel } from '../../../components/Panel'
 import { useEditorContext } from '../EditorContext'
 
 export function RemovalPanel() {
@@ -10,29 +12,23 @@ export function RemovalPanel() {
   const swatch = `rgb(${seed[0]}, ${seed[1]}, ${seed[2]})`
 
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white p-4">
-      <h2 className="mb-3 text-sm font-semibold text-zinc-700">{t('editor.removal.title')}</h2>
-
+    <Panel
+      title={t('editor.removal.title')}
+      action={
+        <Button size="sm" icon="eyedropper" onClick={() => actions.setRemovalDraft({ seed: sampleCorners(item.proxy) })}>
+          {t('editor.removal.autoSeed')}
+        </Button>
+      }
+    >
       {item.params.removal && (
-        <p className="mb-3 rounded-md bg-emerald-50 px-2 py-1.5 text-xs text-emerald-700">
+        <p className="mb-3 rounded-lg bg-emerald-50 px-2 py-1.5 text-xs text-emerald-700">
           {t('editor.removal.appliedHint')}
         </p>
       )}
 
       <div className="mb-3 flex items-center gap-2 text-sm">
-        <span
-          aria-hidden
-          className="h-6 w-6 rounded border border-zinc-300"
-          style={{ backgroundColor: swatch }}
-        />
-        <span className="text-zinc-500">{t('editor.removal.seedHint')}</span>
-        <button
-          type="button"
-          className="ml-auto rounded-md bg-zinc-100 px-2 py-1 text-xs text-zinc-600 hover:bg-zinc-200"
-          onClick={() => actions.setRemovalDraft({ seed: sampleCorners(item.proxy) })}
-        >
-          {t('editor.removal.autoSeed')}
-        </button>
+        <span aria-hidden className="h-6 w-6 shrink-0 rounded-md border border-zinc-300" style={{ backgroundColor: swatch }} />
+        <span className="text-xs text-zinc-500">{t('editor.removal.seedHint')}</span>
       </div>
 
       <label className="mb-2 block text-sm">
@@ -60,21 +56,13 @@ export function RemovalPanel() {
       </label>
 
       <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => void actions.applyRemoval()}
-          className="rounded-md bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-700"
-        >
+        <Button variant="primary" size="sm" icon="check" onClick={() => void actions.applyRemoval()}>
           {t('editor.removal.apply')}
-        </button>
-        <button
-          type="button"
-          onClick={() => actions.resetMask()}
-          className="rounded-md bg-zinc-100 px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-200"
-        >
+        </Button>
+        <Button size="sm" icon="undo" onClick={() => actions.resetMask()}>
           {t('editor.removal.reset')}
-        </button>
+        </Button>
       </div>
-    </section>
+    </Panel>
   )
 }

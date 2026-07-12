@@ -61,7 +61,9 @@
       "dimensions": "{{width}} × {{height}} px",
       "alphaYes": "含透明通道",
       "alphaNo": "不含透明通道"
-    }
+    },
+    "formats": "PNG / JPEG / WebP · 单张 ≤ 20MB",
+    "loading": "处理中…"
   },
   "editor": {
     "clearProject": "清除当前项目",

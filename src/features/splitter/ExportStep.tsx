@@ -6,6 +6,9 @@
 
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Button } from '../../components/Button'
+import { Chip } from '../../components/Chip'
+import { Panel } from '../../components/Panel'
 import { downloadSplitZip } from './exportZip'
 import { useSplitterStore, type NamingRule } from './splitterStore'
 
@@ -33,22 +36,12 @@ export function ExportStep() {
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4">
-      <section className="rounded-lg border border-zinc-200 bg-white p-4">
-        <h2 className="mb-3 text-sm font-semibold text-zinc-700">{t('split.export.namingTitle')}</h2>
-        <div className="mb-3 flex gap-2" role="radiogroup" aria-label={t('split.export.namingTitle')}>
+      <Panel title={t('split.export.namingTitle')}>
+        <div className="mb-3 flex gap-2">
           {RULES.map((rule) => (
-            <button
-              key={rule}
-              type="button"
-              role="radio"
-              aria-checked={namingRule === rule}
-              onClick={() => actions.setNamingRule(rule)}
-              className={`rounded-md px-2 py-1 text-sm ${
-                namingRule === rule ? 'bg-violet-600 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-              }`}
-            >
+            <Chip key={rule} selected={namingRule === rule} onClick={() => actions.setNamingRule(rule)}>
               {t(`split.export.rule.${rule}`)}
-            </button>
+            </Chip>
           ))}
         </div>
         <label className="mb-2 flex items-center gap-2 text-sm">
@@ -57,13 +50,13 @@ export function ExportStep() {
             type="text"
             value={namePrefix}
             onChange={(e) => actions.setNamePrefix(e.target.value)}
-            className="w-40 rounded-md border border-zinc-300 px-2 py-1"
+            className="w-40 rounded-lg border border-zinc-300 px-2 py-1"
           />
         </label>
         <p className="text-xs text-zinc-400">{t('split.export.manualHint')}</p>
-      </section>
+      </Panel>
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-4">
+      <section className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-card">
         <div className="mb-2 flex items-center justify-between text-sm">
           <label className="flex items-center gap-2 text-zinc-600">
             <input type="checkbox" checked={allSelected} onChange={(e) => actions.selectAllPieces(e.target.checked)} />
@@ -75,7 +68,7 @@ export function ExportStep() {
         </div>
         <ul className="flex max-h-80 flex-col gap-1 overflow-y-auto">
           {pieces.map((piece, i) => (
-            <li key={piece.id} className="flex items-center gap-2 rounded-md px-2 py-1 text-sm hover:bg-zinc-50">
+            <li key={piece.id} className="flex items-center gap-2 rounded-lg px-2 py-1 text-sm hover:bg-zinc-50">
               <input
                 type="checkbox"
                 checked={piece.selected}
@@ -93,14 +86,15 @@ export function ExportStep() {
         </ul>
       </section>
 
-      <button
-        type="button"
-        disabled={selected.length === 0 || exporting}
+      <Button
+        variant="primary"
+        icon="archive"
+        busy={exporting}
+        disabled={selected.length === 0}
         onClick={() => void handleExport()}
-        className="rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-40"
       >
-        {exporting ? '…' : t('split.export.zipButton', { count: selected.length })}
-      </button>
+        {t('split.export.zipButton', { count: selected.length })}
+      </Button>
       {selected.length === 0 && (
         <p role="alert" className="text-center text-xs text-amber-600">
           {t('split.export.noneSelected')}

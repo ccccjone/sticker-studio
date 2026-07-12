@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Button } from '../../../components/Button'
+import { Chip } from '../../../components/Chip'
+import { Panel } from '../../../components/Panel'
 import { useEditorContext } from '../EditorContext'
 
 export function ExportPanel() {
@@ -20,26 +23,14 @@ export function ExportPanel() {
   }
 
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white p-4">
-      <h2 className="mb-3 text-sm font-semibold text-zinc-700">{t('editor.export.title')}</h2>
-
+    <Panel title={t('editor.export.title')}>
       <div className="mb-3 flex gap-2">
-        <button
-          type="button"
-          aria-pressed={format === 'png'}
-          onClick={() => actions.setExportFormat('png')}
-          className={`rounded-md px-2 py-1 text-sm ${format === 'png' ? 'bg-violet-600 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}
-        >
+        <Chip selected={format === 'png'} onClick={() => actions.setExportFormat('png')}>
           PNG
-        </button>
-        <button
-          type="button"
-          aria-pressed={format === 'jpeg'}
-          onClick={() => actions.setExportFormat('jpeg')}
-          className={`rounded-md px-2 py-1 text-sm ${format === 'jpeg' ? 'bg-violet-600 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}
-        >
+        </Chip>
+        <Chip selected={format === 'jpeg'} onClick={() => actions.setExportFormat('jpeg')}>
           JPEG
-        </button>
+        </Chip>
       </div>
 
       {format === 'jpeg' && (
@@ -58,11 +49,11 @@ export function ExportPanel() {
           type="text"
           value={fileName}
           onChange={(e) => actions.setFileName(e.target.value)}
-          className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-1"
+          className="mt-1 w-full rounded-lg border border-zinc-300 px-2 py-1"
         />
       </label>
 
-      <p className="mb-3 rounded-md bg-zinc-50 px-3 py-2 text-xs text-zinc-600">
+      <p className="mb-3 rounded-lg bg-zinc-50 px-3 py-2 text-xs text-zinc-600">
         {t('editor.export.summary', {
           width: canvasW,
           height: canvasH,
@@ -71,14 +62,16 @@ export function ExportPanel() {
         })}
       </p>
 
-      <button
-        type="button"
+      <Button
+        variant="primary"
+        icon="download"
+        busy={exporting}
         onClick={() => void handleExport()}
-        disabled={exporting || !fileName.trim()}
-        className="w-full rounded-md bg-violet-600 px-3 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-40"
+        disabled={!fileName.trim()}
+        className="w-full"
       >
-        {exporting ? '…' : t('editor.export.button')}
-      </button>
-    </section>
+        {t('editor.export.button')}
+      </Button>
+    </Panel>
   )
 }

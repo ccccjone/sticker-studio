@@ -66,7 +66,7 @@ export function BatchEditorPage() {
   const { t } = useTranslation()
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-bold">{t('batch.title')}</h1>
+      <h1 className="mb-4 text-2xl font-bold tracking-tight text-zinc-900">{t('batch.title')}</h1>
       <BatchEditorBridge>
         <BatchWorkspace />
       </BatchEditorBridge>

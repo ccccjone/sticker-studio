@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next'
+import { Chip } from '../../../components/Chip'
+import { Panel } from '../../../components/Panel'
 import type { SubjectRatio } from '../types'
 import { useEditorContext } from '../EditorContext'
 
@@ -12,30 +14,15 @@ export function TransformPanel() {
   const scalePercent = Math.round(transform.scale * 100)
 
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white p-4">
-      <h2 className="mb-3 text-sm font-semibold text-zinc-700">{t('editor.transform.title')}</h2>
+    <Panel title={t('editor.transform.title')}>
 
       <div className="mb-3 flex gap-2">
-        <button
-          type="button"
-          aria-pressed={item.fitMode === 'contain'}
-          onClick={() => actions.setFitMode('contain')}
-          className={`rounded-md px-2 py-1 text-sm ${
-            item.fitMode === 'contain' ? 'bg-violet-600 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-          }`}
-        >
+        <Chip selected={item.fitMode === 'contain'} onClick={() => actions.setFitMode('contain')}>
           {t('editor.transform.contain')}
-        </button>
-        <button
-          type="button"
-          aria-pressed={item.fitMode === 'cover'}
-          onClick={() => actions.setFitMode('cover')}
-          className={`rounded-md px-2 py-1 text-sm ${
-            item.fitMode === 'cover' ? 'bg-violet-600 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-          }`}
-        >
+        </Chip>
+        <Chip selected={item.fitMode === 'cover'} onClick={() => actions.setFitMode('cover')}>
           {t('editor.transform.cover')}
-        </button>
+        </Chip>
       </div>
 
       <label className="mb-3 block text-sm">
@@ -55,42 +42,27 @@ export function TransformPanel() {
             max={500}
             value={scalePercent}
             onChange={(e) => actions.setScale(Number(e.target.value) / 100)}
-            className="w-16 rounded-md border border-zinc-300 px-1 py-0.5 text-right"
+            className="w-16 rounded-lg border border-zinc-300 px-1 py-0.5 text-right"
           />
         </div>
       </label>
 
       <div className="mb-3 flex flex-wrap gap-2">
-        <button type="button" onClick={() => actions.rotateStep(-90)} className="rounded-md bg-zinc-100 px-2 py-1 text-sm hover:bg-zinc-200">
-          {t('editor.transform.rotateLeft')}
-        </button>
-        <button type="button" onClick={() => actions.rotateStep(90)} className="rounded-md bg-zinc-100 px-2 py-1 text-sm hover:bg-zinc-200">
-          {t('editor.transform.rotateRight')}
-        </button>
-        <button type="button" onClick={() => actions.flip('x')} className="rounded-md bg-zinc-100 px-2 py-1 text-sm hover:bg-zinc-200">
-          {t('editor.transform.flipH')}
-        </button>
-        <button type="button" onClick={() => actions.flip('y')} className="rounded-md bg-zinc-100 px-2 py-1 text-sm hover:bg-zinc-200">
-          {t('editor.transform.flipV')}
-        </button>
-        <button type="button" onClick={() => actions.center()} className="rounded-md bg-zinc-100 px-2 py-1 text-sm hover:bg-zinc-200">
-          {t('editor.transform.center')}
-        </button>
+        <Chip onClick={() => actions.rotateStep(-90)}>{t('editor.transform.rotateLeft')}</Chip>
+        <Chip onClick={() => actions.rotateStep(90)}>{t('editor.transform.rotateRight')}</Chip>
+        <Chip onClick={() => actions.flip('x')}>{t('editor.transform.flipH')}</Chip>
+        <Chip onClick={() => actions.flip('y')}>{t('editor.transform.flipV')}</Chip>
+        <Chip onClick={() => actions.center()}>{t('editor.transform.center')}</Chip>
       </div>
 
       <div className="flex items-center gap-2 text-sm">
         <span className="text-zinc-500">{t('editor.transform.fitSubject')}</span>
         {RATIOS.map((r) => (
-          <button
-            key={r}
-            type="button"
-            onClick={() => actions.fitToSubject(r)}
-            className="rounded-md bg-zinc-100 px-2 py-1 text-sm hover:bg-zinc-200"
-          >
+          <Chip key={r} onClick={() => actions.fitToSubject(r)}>
             {r}%
-          </button>
+          </Chip>
         ))}
       </div>
-    </section>
+    </Panel>
   )
 }

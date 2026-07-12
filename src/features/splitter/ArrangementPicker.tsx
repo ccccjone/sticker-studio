@@ -4,6 +4,8 @@
  */
 
 import { useTranslation } from 'react-i18next'
+import { Chip } from '../../components/Chip'
+import { Panel } from '../../components/Panel'
 import { useSplitterStore, type ArrangementPreset } from './splitterStore'
 
 const PRESETS: ArrangementPreset[] = ['2x2', '2x4', '3x3', '4x4']
@@ -15,42 +17,22 @@ export function ArrangementPicker() {
   const actions = useSplitterStore((s) => s.actions)
 
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white p-4">
-      <h2 className="mb-3 text-sm font-semibold text-zinc-700">{t('split.arrangement.title')}</h2>
+    <Panel title={t('split.arrangement.title')}>
       <div className="mb-3 flex flex-wrap gap-2">
         {PRESETS.map((preset) => (
-          <button
-            key={preset}
-            type="button"
-            aria-pressed={arrangement === preset}
-            onClick={() => actions.setArrangement(preset)}
-            className={`rounded-md px-2 py-1 text-sm ${
-              arrangement === preset ? 'bg-violet-600 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-            }`}
-          >
+          <Chip key={preset} selected={arrangement === preset} onClick={() => actions.setArrangement(preset)}>
             {preset.replace('x', '×')}
-          </button>
+          </Chip>
         ))}
-        <button
-          type="button"
-          aria-pressed={arrangement === 'custom'}
+        <Chip
+          selected={arrangement === 'custom'}
           onClick={() => actions.setArrangement('custom', { rows: gridOptions.rows, cols: gridOptions.cols })}
-          className={`rounded-md px-2 py-1 text-sm ${
-            arrangement === 'custom' ? 'bg-violet-600 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-          }`}
         >
           {t('split.arrangement.custom')}
-        </button>
-        <button
-          type="button"
-          aria-pressed={arrangement === 'manual'}
-          onClick={() => actions.setArrangement('manual')}
-          className={`rounded-md px-2 py-1 text-sm ${
-            arrangement === 'manual' ? 'bg-violet-600 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-          }`}
-        >
+        </Chip>
+        <Chip selected={arrangement === 'manual'} onClick={() => actions.setArrangement('manual')}>
           {t('split.arrangement.manual')}
-        </button>
+        </Chip>
       </div>
 
       {arrangement === 'custom' && (
@@ -63,7 +45,7 @@ export function ArrangementPicker() {
               max={12}
               value={gridOptions.rows}
               onChange={(e) => actions.setArrangement('custom', { rows: Number(e.target.value), cols: gridOptions.cols })}
-              className="mt-1 w-20 rounded-md border border-zinc-300 px-2 py-1"
+              className="mt-1 w-20 rounded-lg border border-zinc-300 px-2 py-1"
             />
           </label>
           <label className="flex flex-col text-sm">
@@ -74,13 +56,13 @@ export function ArrangementPicker() {
               max={12}
               value={gridOptions.cols}
               onChange={(e) => actions.setArrangement('custom', { rows: gridOptions.rows, cols: Number(e.target.value) })}
-              className="mt-1 w-20 rounded-md border border-zinc-300 px-2 py-1"
+              className="mt-1 w-20 rounded-lg border border-zinc-300 px-2 py-1"
             />
           </label>
         </div>
       )}
 
       {arrangement === 'manual' && <p className="text-xs text-zinc-500">{t('split.canvas.manualHint')}</p>}
-    </section>
+    </Panel>
   )
 }

@@ -10,6 +10,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Button } from '../../components/Button'
 import { Image as KonvaImage, Layer, Rect, Stage, Text, Transformer } from 'react-konva'
 import type Konva from 'konva'
 import { rasterToCanvas } from '../../canvas/encode'
@@ -126,33 +127,29 @@ export function CropBoxLayer() {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-200 bg-white p-2 text-sm">
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-zinc-200/80 bg-white p-2 text-sm shadow-card">
         <span className="text-zinc-500">{t('split.canvas.boxCount', { count: boxes.length })}</span>
         <div className="ml-auto flex gap-1">
-          <button
-            type="button"
-            disabled={!selectedId}
-            onClick={() => selectedId && actions.duplicateBox(selectedId)}
-            className="rounded-md bg-zinc-100 px-2 py-1 disabled:opacity-40"
-          >
+          <Button size="sm" icon="copy" disabled={!selectedId} onClick={() => selectedId && actions.duplicateBox(selectedId)}>
             {t('split.canvas.duplicateBox')}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            icon="trash"
             disabled={!selectedId}
             onClick={() => {
               if (!selectedId) return
               actions.removeBox(selectedId)
               setSelectedId(null)
             }}
-            className="rounded-md bg-red-50 px-2 py-1 text-red-600 disabled:opacity-40"
           >
             {t('split.canvas.deleteBox')}
-          </button>
+          </Button>
         </div>
       </div>
 
-      <div className="inline-block self-start overflow-hidden rounded-lg border border-zinc-200 checkerboard">
+      <div className="inline-block self-start overflow-hidden rounded-2xl border border-zinc-200 checkerboard">
         <Stage
           width={stageW}
           height={stageH}

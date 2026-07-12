@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Button } from '../components/Button'
 import { EditorCanvas } from '../features/editor/EditorCanvas'
 import { EditorProvider, useEditorContext } from '../features/editor/EditorContext'
 import { CanvasSizePanel } from '../features/editor/panels/CanvasSizePanel'
@@ -43,20 +44,16 @@ function SingleEditorWorkspace() {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm text-zinc-600">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-zinc-200/80 bg-white px-4 py-2 text-sm text-zinc-600 shadow-card">
         <span>
           {item.meta.name} · {t('upload.meta.dimensions', { width: item.meta.width, height: item.meta.height })} ·{' '}
           {formatBytes(item.meta.size)} · {item.meta.hasAlpha ? t('upload.meta.alphaYes') : t('upload.meta.alphaNo')}
         </span>
-        <button
-          type="button"
-          onClick={() => {
-            if (window.confirm(t('editor.clearConfirm'))) actions.clear()
-          }}
-          className="rounded-md bg-red-50 px-3 py-1.5 text-red-600 hover:bg-red-100"
-        >
+        <Button variant="danger" size="sm" icon="trash" onClick={() => {
+          if (window.confirm(t('editor.clearConfirm'))) actions.clear()
+        }}>
           {t('editor.clearProject')}
-        </button>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
@@ -78,7 +75,7 @@ export function SingleEditorPage() {
   const { t } = useTranslation()
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-bold">{t('single.title')}</h1>
+      <h1 className="mb-4 text-2xl font-bold tracking-tight text-zinc-900">{t('single.title')}</h1>
       <EditorProvider>
         <SingleEditorWorkspace />
       </EditorProvider>

@@ -6,6 +6,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { decodeFile, validateFile } from '../../canvas/decode'
+import { Icon } from '../../components/Icon'
+import { Spinner } from '../../components/Spinner'
 import { useEditorContext } from './EditorContext'
 
 export interface UploadRejection {
@@ -101,18 +103,25 @@ export function UploadDropzone({ multiple = false, onFiles }: UploadDropzoneProp
           const files = Array.from(e.dataTransfer.files)
           loadFiles(multiple ? files : files.slice(0, 1))
         }}
-        className={`flex min-h-64 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-10 text-center transition-colors ${
+        className={`group flex min-h-64 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-10 text-center transition-colors ${
           dragOver ? 'border-violet-400 bg-violet-50' : 'border-zinc-300 bg-white hover:border-violet-300'
         }`}
       >
-        <span className="text-4xl" aria-hidden>
-          🖼️
+        <span
+          aria-hidden
+          className={`die-cut flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-soft text-primary-strong transition-transform ${
+            dragOver ? 'rotate-0 scale-105' : '-rotate-3 group-hover:rotate-0'
+          }`}
+        >
+          <Icon name="upload" size={26} />
         </span>
         <p className="text-lg font-medium text-zinc-700">{t('upload.title')}</p>
         <p className="text-sm text-zinc-500">{t('upload.hint')}</p>
-        <span className="mt-2 rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white">
-          {loading ? '…' : t('upload.button')}
+        <span className="mt-2 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors group-hover:bg-primary-strong">
+          {loading ? <Spinner size={14} /> : null}
+          {loading ? t('upload.loading') : t('upload.button')}
         </span>
+        <span className="text-xs text-zinc-400">{t('upload.formats')}</span>
         <input
           ref={inputRef}
           type="file"
@@ -123,12 +132,12 @@ export function UploadDropzone({ multiple = false, onFiles }: UploadDropzoneProp
         />
       </div>
       {error && (
-        <p role="alert" className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
           {t(error)}
         </p>
       )}
       {rejected.length > 0 && (
-        <ul role="alert" className="mt-3 space-y-1 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <ul role="alert" className="mt-3 space-y-1 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
           {rejected.map((r, i) => (
             <li key={`${r.name}-${i}`}>
               {r.name}: {t(r.reason)}

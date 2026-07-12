@@ -4,6 +4,7 @@
  */
 
 import { useTranslation } from 'react-i18next'
+import { Chip } from '../../components/Chip'
 import type { Rgba } from '../../core/raster'
 import type { CanvasPreset, SubjectRatio } from '../editor/types'
 import { useSplitterStore } from './splitterStore'
@@ -27,7 +28,7 @@ export function UniformSettingsPanel() {
   const actions = useSplitterStore((s) => s.actions)
 
   return (
-    <section className="rounded-lg border border-violet-200 bg-violet-50/50 p-4">
+    <section className="rounded-2xl border border-violet-200 bg-violet-50/50 p-4 shadow-card">
       <h2 className="mb-1 text-sm font-semibold text-zinc-700">{t('split.uniform.title')}</h2>
       <p className="mb-3 text-xs text-zinc-500">{t('split.uniform.hint')}</p>
 
@@ -35,55 +36,39 @@ export function UniformSettingsPanel() {
         <span className="mb-1 block text-xs text-zinc-500">{t('split.uniform.size')}</span>
         <div className="flex flex-wrap gap-2">
           {PRESETS.map((size) => (
-            <button
+            <Chip
               key={size}
-              type="button"
-              aria-pressed={uniform.canvasW === size && uniform.canvasH === size}
+              selected={uniform.canvasW === size && uniform.canvasH === size}
+              className={uniform.canvasW === size && uniform.canvasH === size ? '' : '!bg-white hover:!bg-zinc-100'}
               onClick={() => actions.applyUniformSettings({ canvasW: size, canvasH: size })}
-              className={`rounded-md px-2 py-1 text-sm ${
-                uniform.canvasW === size && uniform.canvasH === size
-                  ? 'bg-violet-600 text-white'
-                  : 'bg-white text-zinc-600 hover:bg-zinc-100'
-              }`}
             >
               {size}
-            </button>
+            </Chip>
           ))}
         </div>
       </div>
 
       <div className="mb-3 flex items-center gap-2 text-sm">
         <span className="text-xs text-zinc-500">{t('split.uniform.fitMode')}</span>
-        <button
-          type="button"
-          aria-pressed={uniform.fitMode === 'contain'}
-          onClick={() => actions.applyUniformSettings({ fitMode: 'contain' })}
-          className={`rounded-md px-2 py-1 ${uniform.fitMode === 'contain' ? 'bg-violet-600 text-white' : 'bg-white text-zinc-600 hover:bg-zinc-100'}`}
-        >
+<Chip selected={uniform.fitMode === 'contain'} className={uniform.fitMode === 'contain' ? '' : '!bg-white hover:!bg-zinc-100'} onClick={() => actions.applyUniformSettings({ fitMode: 'contain' })}>
           {t('editor.transform.contain')}
-        </button>
-        <button
-          type="button"
-          aria-pressed={uniform.fitMode === 'cover'}
-          onClick={() => actions.applyUniformSettings({ fitMode: 'cover' })}
-          className={`rounded-md px-2 py-1 ${uniform.fitMode === 'cover' ? 'bg-violet-600 text-white' : 'bg-white text-zinc-600 hover:bg-zinc-100'}`}
-        >
+        </Chip>
+        <Chip selected={uniform.fitMode === 'cover'} className={uniform.fitMode === 'cover' ? '' : '!bg-white hover:!bg-zinc-100'} onClick={() => actions.applyUniformSettings({ fitMode: 'cover' })}>
           {t('editor.transform.cover')}
-        </button>
+        </Chip>
       </div>
 
       <div className="mb-3 flex items-center gap-2 text-sm">
         <span className="text-xs text-zinc-500">{t('split.uniform.subjectRatio')}</span>
         {RATIOS.map((r) => (
-          <button
+          <Chip
             key={r}
-            type="button"
-            aria-pressed={uniform.subjectRatio === r}
+            selected={uniform.subjectRatio === r}
+            className={uniform.subjectRatio === r ? '' : '!bg-white hover:!bg-zinc-100'}
             onClick={() => actions.applyUniformSettings({ subjectRatio: r })}
-            className={`rounded-md px-2 py-1 ${uniform.subjectRatio === r ? 'bg-violet-600 text-white' : 'bg-white text-zinc-600 hover:bg-zinc-100'}`}
           >
             {r}%
-          </button>
+          </Chip>
         ))}
       </div>
 
@@ -120,22 +105,12 @@ export function UniformSettingsPanel() {
 
       <div className="flex items-center gap-2 text-sm">
         <span className="text-xs text-zinc-500">{t('split.uniform.format')}</span>
-        <button
-          type="button"
-          aria-pressed={uniform.format === 'png'}
-          onClick={() => actions.applyUniformSettings({ format: 'png' })}
-          className={`rounded-md px-2 py-1 ${uniform.format === 'png' ? 'bg-violet-600 text-white' : 'bg-white text-zinc-600 hover:bg-zinc-100'}`}
-        >
+<Chip selected={uniform.format === 'png'} className={uniform.format === 'png' ? '' : '!bg-white hover:!bg-zinc-100'} onClick={() => actions.applyUniformSettings({ format: 'png' })}>
           PNG
-        </button>
-        <button
-          type="button"
-          aria-pressed={uniform.format === 'jpeg'}
-          onClick={() => actions.applyUniformSettings({ format: 'jpeg' })}
-          className={`rounded-md px-2 py-1 ${uniform.format === 'jpeg' ? 'bg-violet-600 text-white' : 'bg-white text-zinc-600 hover:bg-zinc-100'}`}
-        >
+        </Chip>
+        <Chip selected={uniform.format === 'jpeg'} className={uniform.format === 'jpeg' ? '' : '!bg-white hover:!bg-zinc-100'} onClick={() => actions.applyUniformSettings({ format: 'jpeg' })}>
           JPEG
-        </button>
+        </Chip>
         {uniform.format === 'jpeg' && (
           <input
             type="color"

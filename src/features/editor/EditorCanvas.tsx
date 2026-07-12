@@ -9,10 +9,20 @@ import { useTranslation } from 'react-i18next'
 import { Group, Image as KonvaImage, Layer, Stage } from 'react-konva'
 import type Konva from 'konva'
 import { rasterToCanvas } from '../../canvas/encode'
+import { Button } from '../../components/Button'
+import { Chip } from '../../components/Chip'
+import { Icon, type IconName } from '../../components/Icon'
 import { composeAlpha } from '../../core/mask'
 import { useEditorContext } from './EditorContext'
 
 type Tool = 'pan' | 'erase' | 'restore' | 'eyedropper'
+
+const TOOLS: readonly [Tool, IconName][] = [
+  ['pan', 'hand'],
+  ['erase', 'eraser'],
+  ['restore', 'brush'],
+  ['eyedropper', 'eyedropper'],
+]
 
 const PREVIEW_BG_CLASS: Record<string, string> = {
   white: 'bg-white',
@@ -99,20 +109,13 @@ export function EditorCanvas() {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-200 bg-white p-2 text-sm">
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-zinc-200/80 bg-white p-2 text-sm shadow-card">
         <div className="flex gap-1" role="group" aria-label={t('editor.toolGroup')}>
-          {(['pan', 'erase', 'restore', 'eyedropper'] as Tool[]).map((tl) => (
-            <button
-              key={tl}
-              type="button"
-              aria-pressed={tool === tl}
-              onClick={() => setTool(tl)}
-              className={`rounded-md px-2 py-1 ${
-                tool === tl ? 'bg-violet-600 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-              }`}
-            >
+          {TOOLS.map(([tl, icon]) => (
+            <Chip key={tl} selected={tool === tl} onClick={() => setTool(tl)}>
+              <Icon name={icon} size={13} />
               {t(`editor.tool.${tl}`)}
-            </button>
+            </Chip>
           ))}
         </div>
         <label className="flex items-center gap-1">
@@ -127,27 +130,17 @@ export function EditorCanvas() {
           <span className="w-8 text-right tabular-nums">{brushSize}</span>
         </label>
         <div className="ml-auto flex gap-1">
-          <button
-            type="button"
-            disabled={!canUndo}
-            onClick={() => actions.undo()}
-            className="rounded-md bg-zinc-100 px-2 py-1 disabled:opacity-40"
-          >
+          <Button size="sm" icon="undo" disabled={!canUndo} onClick={() => actions.undo()}>
             {t('editor.undo')}
-          </button>
-          <button
-            type="button"
-            disabled={!canRedo}
-            onClick={() => actions.redo()}
-            className="rounded-md bg-zinc-100 px-2 py-1 disabled:opacity-40"
-          >
+          </Button>
+          <Button size="sm" icon="redo" disabled={!canRedo} onClick={() => actions.redo()}>
             {t('editor.redo')}
-          </button>
+          </Button>
         </div>
       </div>
 
       <div
-        className={`inline-block overflow-hidden rounded-lg border border-zinc-200 ${previewBgClass}`}
+        className={`inline-block overflow-hidden rounded-2xl border border-zinc-200 ${previewBgClass}`}
         style={previewBgStyle}
       >
         <Stage
