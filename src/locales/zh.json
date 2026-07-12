@@ -1,0 +1,278 @@
+{
+  "app": {
+    "name": "Sticker Studio",
+    "tagline": "表情包工坊"
+  },
+  "nav": {
+    "home": "首页",
+    "single": "单图处理",
+    "batch": "批量处理",
+    "split": "拼图拆分",
+    "guide": "生成指南"
+  },
+  "home": {
+    "intro": "浏览器端 AI 表情包与透明图片处理工具：去除背景、统一尺寸、拆分拼图、批量导出。",
+    "privacy": "图片默认在您的浏览器本地处理，不会上传到我们的服务器。",
+    "entries": {
+      "single": {
+        "title": "单张图片处理",
+        "desc": "上传一张图片，去除背景、调整尺寸并导出真透明 PNG。"
+      },
+      "batch": {
+        "title": "批量处理图片",
+        "desc": "一次处理多张图片，统一设置并 ZIP 打包下载。"
+      },
+      "split": {
+        "title": "拆分表情包拼图",
+        "desc": "把一张多表情拼图拆成独立贴纸并分别导出。"
+      },
+      "guide": {
+        "title": "表情包生成指南",
+        "desc": "角色、风格与情绪词库，一键生成可复制的 AI Prompt。"
+      }
+    }
+  },
+  "single": {
+    "title": "单张图片处理"
+  },
+  "upload": {
+    "title": "上传图片",
+    "hint": "点击选择、拖拽图片到此处，或直接粘贴（Ctrl/Cmd+V）",
+    "button": "选择图片",
+    "unsupportedType": "不支持的图片格式，请使用 PNG / JPEG / WebP",
+    "tooLarge": "图片大小超过 20MB，请压缩后重试",
+    "decodeFailed": "图片解码失败，请更换图片重试",
+    "meta": {
+      "dimensions": "{{width}} × {{height}} px",
+      "alphaYes": "含透明通道",
+      "alphaNo": "不含透明通道"
+    }
+  },
+  "editor": {
+    "clearProject": "清除当前项目",
+    "clearConfirm": "确定要清除当前项目吗？未导出的编辑内容将丢失。",
+    "undo": "撤销",
+    "redo": "重做",
+    "toolGroup": "编辑工具",
+    "brushSize": "画笔大小",
+    "tool": {
+      "pan": "拖动",
+      "erase": "擦除",
+      "restore": "恢复",
+      "eyedropper": "吸管"
+    },
+    "status": {
+      "zoom": "缩放 {{percent}}%",
+      "canvasSize": "画布 {{width}} × {{height}}"
+    },
+    "removal": {
+      "title": "去背景",
+      "seedHint": "选择“吸管”工具后在画布上点击取色",
+      "autoSeed": "自动取色",
+      "tolerance": "容差",
+      "softness": "边缘柔化",
+      "apply": "应用",
+      "reset": "重置蒙版"
+    },
+    "canvasSize": {
+      "title": "画布尺寸",
+      "width": "宽",
+      "height": "高",
+      "lockAspect": "锁定比例"
+    },
+    "transform": {
+      "title": "位置与缩放",
+      "contain": "完整显示",
+      "cover": "填满画布",
+      "scale": "缩放",
+      "rotateLeft": "逆时针 90°",
+      "rotateRight": "顺时针 90°",
+      "flipH": "水平翻转",
+      "flipV": "垂直翻转",
+      "center": "一键居中",
+      "fitSubject": "自动适应主体"
+    },
+    "outline": {
+      "title": "描边",
+      "enable": "启用",
+      "color": "颜色",
+      "width": "宽度",
+      "exportOnlyHint": "描边效果仅在导出结果中生效，画布预览不实时显示。"
+    },
+    "previewBg": {
+      "title": "预览背景",
+      "checkerboard": "棋盘格",
+      "white": "白色",
+      "black": "黑色",
+      "gray": "灰色",
+      "custom": "自定义"
+    },
+    "export": {
+      "title": "导出",
+      "jpegBg": "背景色",
+      "jpegAlphaWarning": "JPEG 不支持透明背景，透明区域将被填充为所选背景色。",
+      "fileName": "文件名",
+      "summary": "输出 {{width}} × {{height}} px · {{format}} · {{transparency}}",
+      "transparentYes": "含透明",
+      "transparentNo": "不透明",
+      "button": "导出图片"
+    }
+  },
+  "batch": {
+    "title": "批量处理图片",
+    "tooMany": "已超过单次批量 50 张的上限，超出部分未加入列表",
+    "status": {
+      "pending": "未处理",
+      "edited": "已编辑",
+      "processing": "处理中",
+      "failed": "失败"
+    },
+    "list": {
+      "selectAll": "全选",
+      "count": "{{count}} / {{max}} 张",
+      "select": "选中 {{name}}",
+      "remove": "移除 {{name}}"
+    },
+    "toolbar": {
+      "scope": "应用范围",
+      "scopeCurrent": "仅当前",
+      "scopeSelected": "选中项",
+      "scopeAll": "全部",
+      "exportAll": "导出全部（ZIP）",
+      "exportSelected": "导出选中（{{count}}，ZIP）",
+      "canvasSize": "画布尺寸",
+      "fitMode": "适配模式",
+      "outline": "描边",
+      "outlineOn": "启用（默认样式）",
+      "outlineOff": "关闭",
+      "format": "格式",
+      "rerunRemoval": "重新去背景",
+      "namePrefix": "命名前缀",
+      "applyNaming": "应用命名"
+    }
+  },
+  "split": {
+    "title": "拆分表情包拼图",
+    "gridInvalid": "网格参数无效：按当前行列、边距与间距计算出的单元尺寸不为正，请调小参数",
+    "resplitConfirm": "重新切分将丢弃已有贴纸的逐张编辑内容，确定继续吗？",
+    "splitButton": "切分为 {{count}} 张贴纸",
+    "toExport": "下一步：导出",
+    "step": {
+      "group": "步骤",
+      "upload": "上传",
+      "select": "框选",
+      "edit": "逐张编辑",
+      "export": "导出"
+    },
+    "arrangement": {
+      "title": "排列方式",
+      "custom": "自定义行列",
+      "manual": "手动框选"
+    },
+    "grid": {
+      "title": "网格参数",
+      "rows": "行数",
+      "cols": "列数",
+      "margin": "外边距",
+      "gapX": "横向间距",
+      "gapY": "纵向间距"
+    },
+    "canvas": {
+      "boxCount": "{{count}} 个裁剪框",
+      "manualHint": "在画布空白处拖拽新建矩形框；点击框后可移动、四角改大小、复制或删除。",
+      "duplicateBox": "复制",
+      "deleteBox": "删除"
+    },
+    "pieces": {
+      "selectAll": "全选",
+      "count": "共 {{count}} 张",
+      "select": "选中第 {{index}} 张",
+      "rename": "重命名第 {{index}} 张",
+      "customized": "已自定义"
+    },
+    "uniform": {
+      "title": "统一设置",
+      "hint": "默认应用到所有贴纸；单张编辑过的字段不会被覆盖。",
+      "size": "输出尺寸",
+      "fitMode": "适配模式",
+      "subjectRatio": "主体占比",
+      "outline": "描边",
+      "format": "格式"
+    },
+    "export": {
+      "namingTitle": "命名规则",
+      "rule": {
+        "sequence": "连续编号",
+        "rowCol": "行列编号"
+      },
+      "prefix": "前缀",
+      "manualHint": "单张手动改过的名字始终优先于命名规则。",
+      "selectedCount": "已选 {{count}} / {{total}} 张",
+      "zipButton": "导出 ZIP（{{count}} 张）",
+      "noneSelected": "请至少勾选一张贴纸再导出"
+    }
+  },
+  "guide": {
+    "title": "表情包生成指南",
+    "intro": "帮助你在使用 ChatGPT、Gemini 等 AI 工具生成表情包时，写出更容易保持角色一致、也更容易拆分和去背景的 Prompt。",
+    "steps": {
+      "character": {
+        "title": "第一步：定义角色",
+        "body": "先确定角色类型、年龄感、发型、衣服、主色和配色、身体比例、个性，以及是否有固定道具。建议先让 AI 生成并确认一张角色定妆图，再基于同一张参考图生成整套表情，不要一开始就直接生成几十个表情。"
+      },
+      "style": {
+        "title": "第二步：选择绘画风格",
+        "body": "从柔和、简洁、可爱、其他四组风格词库中挑选一种，并在整套表情中保持一致。",
+        "tip": "复杂水彩、透明阴影和柔和发丝边缘更难去背景；简笔画、纯色轮廓和清晰白边更容易拆分。"
+      },
+      "mood": {
+        "title": "第三步：选择情绪和动作",
+        "body": "从情绪词库中勾选需要的表情，这些词也可以直接用作导出文件名。默认 Prompt 会要求图片内部不出现任何文字。"
+      },
+      "composition": {
+        "title": "第四步：构图规范",
+        "body": "单张单表情角色更大、细节更清晰、更容易去背景，但需要多次生成；规则拼图（2×2/2×4/3×3/4×4）一次生成多个表情，但需要在 Prompt 中明确要求每格一个完整角色、互不重叠、不裁切、不出现分隔线。"
+      },
+      "outlineBg": {
+        "title": "第五步：白边与背景建议",
+        "body": "白色或高对比度贴纸边框有助于明确主体边界、把细小装饰和角色连成一个整体、方便后续自动拆分。生成阶段建议使用中灰色等纯色背景，网站去背景时再把它变成真透明。"
+      }
+    },
+    "tips": {
+      "outline": {
+        "title": "白边有助于拆分的前提",
+        "items": [
+          "白边必须完整闭合",
+          "所有元素都必须在白边内",
+          "白边之外的背景颜色应与白边明显不同",
+          "不同贴纸之间不能通过白边相连",
+          "贴纸之间必须留有足够空间"
+        ]
+      },
+      "background": {
+        "title": "推荐背景色",
+        "items": ["中等灰色", "纯绿色", "纯蓝色", "柔和但均匀的单色"],
+        "warning": "不要使用接近白色的背景，因为白边和背景会难以分离。"
+      }
+    },
+    "builder": {
+      "title": "Prompt 生成器",
+      "character": {
+        "label": "角色类型",
+        "customLabel": "自定义角色描述",
+        "customPlaceholder": "例如：戴着蓝色蝴蝶结的水滴角色"
+      },
+      "style": { "label": "绘画风格" },
+      "arrangement": { "label": "排列方式" },
+      "moods": {
+        "label": "选择情绪（可多选）",
+        "selectedCount": "已选 {{count}} 个",
+        "toggleGroup": "展开或收起「{{group}}」"
+      },
+      "outline": { "label": "白色描边（有助于后续拆分）" },
+      "output": { "title": "生成的 Prompt" },
+      "copy": "复制 Prompt",
+      "copied": "已复制"
+    }
+  }
+}
