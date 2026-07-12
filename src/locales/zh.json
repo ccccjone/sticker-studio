@@ -152,7 +152,65 @@
     }
   },
   "split": {
-    "title": "拆分表情包拼图"
+    "title": "拆分表情包拼图",
+    "gridInvalid": "网格参数无效：按当前行列、边距与间距计算出的单元尺寸不为正，请调小参数",
+    "resplitConfirm": "重新切分将丢弃已有贴纸的逐张编辑内容，确定继续吗？",
+    "splitButton": "切分为 {{count}} 张贴纸",
+    "toExport": "下一步：导出",
+    "step": {
+      "group": "步骤",
+      "upload": "上传",
+      "select": "框选",
+      "edit": "逐张编辑",
+      "export": "导出"
+    },
+    "arrangement": {
+      "title": "排列方式",
+      "custom": "自定义行列",
+      "manual": "手动框选"
+    },
+    "grid": {
+      "title": "网格参数",
+      "rows": "行数",
+      "cols": "列数",
+      "margin": "外边距",
+      "gapX": "横向间距",
+      "gapY": "纵向间距"
+    },
+    "canvas": {
+      "boxCount": "{{count}} 个裁剪框",
+      "manualHint": "在画布空白处拖拽新建矩形框；点击框后可移动、四角改大小、复制或删除。",
+      "duplicateBox": "复制",
+      "deleteBox": "删除"
+    },
+    "pieces": {
+      "selectAll": "全选",
+      "count": "共 {{count}} 张",
+      "select": "选中第 {{index}} 张",
+      "rename": "重命名第 {{index}} 张",
+      "customized": "已自定义"
+    },
+    "uniform": {
+      "title": "统一设置",
+      "hint": "默认应用到所有贴纸；单张编辑过的字段不会被覆盖。",
+      "size": "输出尺寸",
+      "fitMode": "适配模式",
+      "subjectRatio": "主体占比",
+      "outline": "描边",
+      "format": "格式"
+    },
+    "export": {
+      "namingTitle": "命名规则",
+      "rule": {
+        "sequence": "连续编号",
+        "rowCol": "行列编号"
+      },
+      "prefix": "前缀",
+      "manualHint": "单张手动改过的名字始终优先于命名规则。",
+      "selectedCount": "已选 {{count}} / {{total}} 张",
+      "zipButton": "导出 ZIP（{{count}} 张）",
+      "noneSelected": "请至少勾选一张贴纸再导出"
+    }
   },
   "guide": {
     "title": "表情包生成指南"

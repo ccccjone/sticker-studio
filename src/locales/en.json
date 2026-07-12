@@ -152,7 +152,65 @@
     }
   },
   "split": {
-    "title": "Split a Sticker Sheet"
+    "title": "Split a Sticker Sheet",
+    "gridInvalid": "Invalid grid: with the current rows, columns, margin and gaps the cell size is not positive. Please reduce the values.",
+    "resplitConfirm": "Re-splitting will discard the per-sticker edits you have made. Continue?",
+    "splitButton": "Split into {{count}} stickers",
+    "toExport": "Next: Export",
+    "step": {
+      "group": "Steps",
+      "upload": "Upload",
+      "select": "Select",
+      "edit": "Edit",
+      "export": "Export"
+    },
+    "arrangement": {
+      "title": "Arrangement",
+      "custom": "Custom rows/cols",
+      "manual": "Manual selection"
+    },
+    "grid": {
+      "title": "Grid parameters",
+      "rows": "Rows",
+      "cols": "Columns",
+      "margin": "Margin",
+      "gapX": "Horizontal gap",
+      "gapY": "Vertical gap"
+    },
+    "canvas": {
+      "boxCount": "{{count}} crop boxes",
+      "manualHint": "Drag on an empty area to draw a new box; click a box to move it, resize from its corners, duplicate or delete it.",
+      "duplicateBox": "Duplicate",
+      "deleteBox": "Delete"
+    },
+    "pieces": {
+      "selectAll": "Select all",
+      "count": "{{count}} stickers",
+      "select": "Select sticker {{index}}",
+      "rename": "Rename sticker {{index}}",
+      "customized": "Customized"
+    },
+    "uniform": {
+      "title": "Uniform settings",
+      "hint": "Applied to every sticker by default; fields you edited on a single sticker are never overwritten.",
+      "size": "Output size",
+      "fitMode": "Fit mode",
+      "subjectRatio": "Subject ratio",
+      "outline": "Outline",
+      "format": "Format"
+    },
+    "export": {
+      "namingTitle": "Naming rule",
+      "rule": {
+        "sequence": "Sequential numbers",
+        "rowCol": "Row-column"
+      },
+      "prefix": "Prefix",
+      "manualHint": "A manually entered name always wins over the naming rule.",
+      "selectedCount": "{{count}} / {{total}} selected",
+      "zipButton": "Export ZIP ({{count}})",
+      "noneSelected": "Select at least one sticker to export."
+    }
   },
   "guide": {
     "title": "Sticker Prompt Guide"
