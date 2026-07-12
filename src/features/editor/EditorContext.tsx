@@ -15,7 +15,11 @@ export interface EditorContextValue {
   canRedo: boolean
 }
 
-const EditorContext = createContext<EditorContextValue | null>(null)
+// Exported (not just the hook) so other workflows (batch/splitter) can supply their own
+// EditorContextValue via `<EditorContext.Provider value={...}>` without going through
+// EditorProvider, which stays bound to the single-image editorStore.
+// oxlint-disable-next-line react/only-export-components -- context object belongs next to its provider/hook
+export const EditorContext = createContext<EditorContextValue | null>(null)
 
 export function EditorProvider({ children }: { children: ReactNode }) {
   const item = useEditorStore((s) => s.item)
