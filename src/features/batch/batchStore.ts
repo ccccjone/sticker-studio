@@ -27,7 +27,8 @@ import { applyBrush, composeAlpha, createMask, type BrushMode, type ChangedPixel
 import { editedName, sequenceName } from '../../core/naming'
 import type { RasterImage, Rgba } from '../../core/raster'
 import { sampleCorners } from '../../core/removal'
-import { runPixelTask } from '../../workers/runPixelTask'
+import { getRemovalEngine } from '../../core/engine'
+import { computeAutoRemoval } from '../editor/autoRemoval'
 import { projectToRotatedSpace } from '../editor/transformMath'
 import type { CanvasPreset, EditorActions, EditorItem, PreviewBg, SubjectRatio } from '../editor/types'
 
@@ -208,6 +209,18 @@ export const useBatchStore = create<BatchState>()((set, get) => {
             items: [...state.items, ...newItems],
             currentId: state.currentId ?? newItems[0].id,
           }))
+          // 自动预应用去背景（spec 2026-07-12 §F1）：串行处理，已透明/失败的条目跳过
+          for (const added of newItems) {
+            const auto = await computeAutoRemoval(added.proxy, added.removalDraft)
+            if (!auto) continue
+            set((state) => ({
+              items: patchItem(state.items, added.id, (it) =>
+                it.mask === null && !it.params.removal
+                  ? { ...it, mask: auto.mask, removalBaseline: auto.baseline, params: { ...it.params, removal: auto.removal } }
+                  : it,
+              ),
+            }))
+          }
         }
         return { rejected }
       },
@@ -303,8 +316,7 @@ export const useBatchStore = create<BatchState>()((set, get) => {
               const current = get().items.find((it) => it.id === targetItem.id)
               if (!current) continue
               const seed = uniformSeed ?? sampleCorners(current.proxy)
-              const result = await runPixelTask({ kind: 'maskByColor', image: current.proxy, seed, tolerance, softness })
-              const mask = result.kind === 'maskByColor' ? result.mask : createMask(current.proxy.width, current.proxy.height)
+              const mask = await getRemovalEngine().createMask(current.proxy, { seed, tolerance, softness })
               const baseline = new Uint8Array(mask)
               const removalParam: RemovalParams = { seed, tolerance, softness }
               set((state) => ({
@@ -326,9 +338,18 @@ export const useBatchStore = create<BatchState>()((set, get) => {
 
       // ---- EditorActions, applied to whichever item is `currentId` ----
 
-      loadImage(decoded) {
+      async loadImage(decoded) {
         const item = buildBatchItem(decoded)
         set((state) => ({ items: [...state.items, item], currentId: item.id, undoStack: [], redoStack: [] }))
+        const auto = await computeAutoRemoval(item.proxy, item.removalDraft)
+        if (!auto) return
+        set((state) => ({
+          items: patchItem(state.items, item.id, (it) =>
+            it.mask === null && !it.params.removal
+              ? { ...it, mask: auto.mask, removalBaseline: auto.baseline, params: { ...it.params, removal: auto.removal } }
+              : it,
+          ),
+        }))
       },
 
       clear() {
@@ -361,8 +382,7 @@ export const useBatchStore = create<BatchState>()((set, get) => {
         const it = items.find((i) => i.id === currentId)
         if (!it) return
         const { seed, tolerance, softness } = it.removalDraft
-        const result = await runPixelTask({ kind: 'maskByColor', image: it.proxy, seed, tolerance, softness })
-        const mask = result.kind === 'maskByColor' ? result.mask : createMask(it.proxy.width, it.proxy.height)
+        const mask = await getRemovalEngine().createMask(it.proxy, { seed, tolerance, softness })
         const baseline = new Uint8Array(mask)
         const removalParam: RemovalParams = { seed, tolerance, softness }
         const entry: UndoEntry = {

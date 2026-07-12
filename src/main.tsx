@@ -4,6 +4,9 @@ import { BrowserRouter } from 'react-router'
 import './index.css'
 import './app/i18n'
 import { AppRoutes } from './app/router'
+import { registerDefaultEngines } from './engines'
+
+registerDefaultEngines()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

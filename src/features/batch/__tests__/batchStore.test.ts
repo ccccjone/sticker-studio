@@ -9,6 +9,8 @@ vi.mock('../../../canvas/decode', async () => {
     ...actual,
     decodeFile: vi.fn(async (file: File) => {
       const image = createRaster(8, 8, [255, 255, 255, 255])
+      // 默认带透明像素（跳过自动预应用，保持既有用例语义）；文件名含 opaque 时全不透明
+      if (!file.name.includes('opaque')) setPixel(image, 0, 0, [0, 0, 0, 0])
       return {
         image,
         proxy: image,
@@ -31,6 +33,9 @@ vi.mock('../../../workers/runPixelTask', () => ({
 
 const { useBatchStore } = await import('../batchStore')
 const { runPixelTask } = await import('../../../workers/runPixelTask')
+// 引擎实现依赖 runPixelTask，同样要在 mock 之后注册
+const { registerDefaultEngines } = await import('../../../engines')
+registerDefaultEngines()
 
 function actions() {
   return useBatchStore.getState().actions
@@ -69,6 +74,17 @@ function seedItems(n: number) {
 beforeEach(() => {
   useBatchStore.setState({ items: [], currentId: null, undoStack: [], redoStack: [] })
   vi.mocked(runPixelTask).mockImplementation(async (task) => runTask(task))
+})
+
+describe('batchStore: auto removal on addFiles', () => {
+  test('opaque uploads get removal pre-applied; transparent ones stay untouched', async () => {
+    await actions().addFiles([makeFile('opaque-cat.png'), makeFile('clear-cat.png')])
+    const [opaque, clear] = useBatchStore.getState().items
+    expect(opaque.mask).not.toBeNull()
+    expect(opaque.params.removal).toBeDefined()
+    expect(clear.mask).toBeNull()
+    expect(clear.params.removal).toBeUndefined()
+  })
 })
 
 describe('batchStore: addFiles limits', () => {

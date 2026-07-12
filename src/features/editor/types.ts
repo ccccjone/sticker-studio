@@ -45,7 +45,8 @@ export interface EditorItem {
 }
 
 export interface EditorActions {
-  loadImage(decoded: { image: RasterImage; proxy: RasterImage; meta: ImageMeta }): void
+  /** 装载图片并自动预应用去背景（已含透明通道的图跳过）。 */
+  loadImage(decoded: { image: RasterImage; proxy: RasterImage; meta: ImageMeta }): Promise<void>
   clear(): void
 
   // 去背景

@@ -25,7 +25,8 @@ import { applyBrush, composeAlpha, createMask, type BrushMode, type ChangedPixel
 import { rowColName, sequenceName } from '../../core/naming'
 import { cropRaster, type RasterImage, type Rgba } from '../../core/raster'
 import { sampleCorners } from '../../core/removal'
-import { runPixelTask } from '../../workers/runPixelTask'
+import { getRemovalEngine } from '../../core/engine'
+import { computeAutoRemoval } from '../editor/autoRemoval'
 // Value import is safe: exportZip only imports *types* from this module, so there is
 // no runtime import cycle (type imports are erased at compile time).
 import { exportSinglePiece } from './exportZip'
@@ -80,7 +81,7 @@ export interface SplitterActions extends EditorActions {
   updateBox(id: string, patch: Partial<Pick<CropBox, 'x' | 'y' | 'width' | 'height'>>): void
   removeBox(id: string): void
   duplicateBox(id: string): void
-  splitIntoPieces(): void
+  splitIntoPieces(): Promise<void>
   selectPiece(id: string): void
   togglePieceSelected(id: string): void
   selectAllPieces(selected: boolean): void
@@ -317,7 +318,7 @@ export const useSplitterStore = create<SplitterState>()((set, get) => {
     actions: {
       // ---- Sheet lifecycle ----
 
-      loadImage(decoded) {
+      async loadImage(decoded) {
         const sheet = decoded
         const { boxes, error } = tryGenerateGrid(sheet.proxy.width, sheet.proxy.height, DEFAULT_GRID_OPTIONS)
         set({
@@ -429,11 +430,23 @@ export const useSplitterStore = create<SplitterState>()((set, get) => {
         })
       },
 
-      splitIntoPieces() {
+      async splitIntoPieces() {
         const { sheet, boxes, uniformSettings, namingRule, namePrefix } = get()
         if (!sheet || boxes.length === 0) return
         const pieces = boxes.map((box, i) => buildPiece(i, box, sheet, uniformSettings, namingRule, namePrefix, boxes.length))
         set({ pieces, currentPieceId: pieces[0]?.id ?? null, step: 'edit', undoStack: [], redoStack: [] })
+        // 自动预应用去背景（spec 2026-07-12 §F1）：串行处理，已透明/失败的贴纸跳过
+        for (const piece of pieces) {
+          const auto = await computeAutoRemoval(piece.proxy, piece.removalDraft)
+          if (!auto) continue
+          set((state) => ({
+            pieces: patchPiece(state.pieces, piece.id, (cur) =>
+              cur.mask === null && !cur.params.removal
+                ? { ...cur, mask: auto.mask, removalBaseline: auto.baseline, params: { ...cur.params, removal: auto.removal } }
+                : cur,
+            ),
+          }))
+        }
       },
 
       // ---- Piece selection / naming (step: edit / export) ----
@@ -568,8 +581,7 @@ export const useSplitterStore = create<SplitterState>()((set, get) => {
         const p = pieces.find((i) => i.id === currentPieceId)
         if (!p) return
         const { seed, tolerance, softness } = p.removalDraft
-        const result = await runPixelTask({ kind: 'maskByColor', image: p.proxy, seed, tolerance, softness })
-        const mask = result.kind === 'maskByColor' ? result.mask : createMask(p.proxy.width, p.proxy.height)
+        const mask = await getRemovalEngine().createMask(p.proxy, { seed, tolerance, softness })
         const baseline = new Uint8Array(mask)
         const removalParam: RemovalParams = { seed, tolerance, softness }
         const entry: UndoEntry = {

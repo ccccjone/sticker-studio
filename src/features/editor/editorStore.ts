@@ -17,8 +17,9 @@ import { fit, fitSubject, subjectBBox } from '../../core/layout'
 import { applyBrush, composeAlpha, createMask, type BrushMode, type ChangedPixel } from '../../core/mask'
 import { editedName } from '../../core/naming'
 import type { RasterImage } from '../../core/raster'
-import { sampleCorners } from '../../core/removal'
-import { runPixelTask } from '../../workers/runPixelTask'
+import { getRemovalEngine } from '../../core/engine'
+import { hasSignificantAlpha, sampleCorners } from '../../core/removal'
+import { computeExportMask } from './exportHelpers'
 import { projectToRotatedSpace } from './transformMath'
 import type { CanvasPreset, EditorActions, EditorItem, PreviewBg, RemovalDraft, SubjectRatio } from './types'
 
@@ -101,8 +102,15 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
   undoStack: [],
   redoStack: [],
   actions: {
-    loadImage(decoded) {
+    async loadImage(decoded) {
       set({ item: buildItem(decoded), undoStack: [], redoStack: [] })
+      // 自动预应用去背景（spec 2026-07-12 §F1）：已含透明通道的图跳过；失败静默保持未应用
+      if (hasSignificantAlpha(decoded.proxy)) return
+      try {
+        await get().actions.applyRemoval()
+      } catch {
+        /* F1.6：静默降级 */
+      }
     },
 
     clear() {
@@ -134,8 +142,9 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
       const { item, undoStack } = get()
       if (!item) return
       const { seed, tolerance, softness } = item.removalDraft
-      const result = await runPixelTask({ kind: 'maskByColor', image: item.proxy, seed, tolerance, softness })
-      const mask = result.kind === 'maskByColor' ? result.mask : createMask(item.proxy.width, item.proxy.height)
+      const mask = await getRemovalEngine().createMask(item.proxy, { seed, tolerance, softness })
+      // 等待期间图片被替换/清除则丢弃结果，避免旧蒙版覆盖新图
+      if (get().item?.id !== item.id) return
       const baseline = new Uint8Array(mask)
       const removalParam: RemovalParams = { seed, tolerance, softness }
       const entry: UndoEntry = {
@@ -425,37 +434,7 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
     async exportImage() {
       const { item } = get()
       if (!item) return
-      let mask: Uint8Array | null = null
-      if (item.mask) {
-        let fullMask: Uint8Array
-        if (item.params.removal) {
-          const { seed, tolerance, softness } = item.params.removal
-          const result = await runPixelTask({ kind: 'maskByColor', image: item.image, seed, tolerance, softness })
-          fullMask =
-            result.kind === 'maskByColor' ? result.mask : createMask(item.image.width, item.image.height, 255)
-        } else {
-          fullMask = createMask(item.image.width, item.image.height, 255)
-        }
-        const baseline = item.removalBaseline ?? createMask(item.proxy.width, item.proxy.height, 255)
-        const sx = item.image.width / item.proxy.width
-        const sy = item.image.height / item.proxy.height
-        for (let py = 0; py < item.proxy.height; py++) {
-          for (let px = 0; px < item.proxy.width; px++) {
-            const p = py * item.proxy.width + px
-            if (item.mask[p] === baseline[p]) continue
-            const fx0 = Math.floor(px * sx)
-            const fx1 = Math.min(item.image.width, Math.max(fx0 + 1, Math.floor((px + 1) * sx)))
-            const fy0 = Math.floor(py * sy)
-            const fy1 = Math.min(item.image.height, Math.max(fy0 + 1, Math.floor((py + 1) * sy)))
-            for (let fy = fy0; fy < fy1; fy++) {
-              for (let fx = fx0; fx < fx1; fx++) {
-                fullMask[fy * item.image.width + fx] = item.mask[p]
-              }
-            }
-          }
-        }
-        mask = fullMask
-      }
+      const mask = await computeExportMask(item)
       const out = renderExport(item.image, mask, item.params)
       const blob = await encodeRaster(out, item.params.format, item.params.jpegBg)
       const ext = item.params.format === 'jpeg' ? 'jpg' : 'png'

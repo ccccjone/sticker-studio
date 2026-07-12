@@ -13,6 +13,12 @@ export function RemovalPanel() {
     <section className="rounded-lg border border-zinc-200 bg-white p-4">
       <h2 className="mb-3 text-sm font-semibold text-zinc-700">{t('editor.removal.title')}</h2>
 
+      {item.params.removal && (
+        <p className="mb-3 rounded-md bg-emerald-50 px-2 py-1.5 text-xs text-emerald-700">
+          {t('editor.removal.appliedHint')}
+        </p>
+      )}
+
       <div className="mb-3 flex items-center gap-2 text-sm">
         <span
           aria-hidden

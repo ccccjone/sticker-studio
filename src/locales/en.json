@@ -72,7 +72,8 @@
       "tolerance": "Tolerance",
       "softness": "Edge softness",
       "apply": "Apply",
-      "reset": "Reset mask"
+      "reset": "Reset mask",
+      "appliedHint": "Background removed automatically. Adjust the parameters and re-apply, or click “Reset mask” to undo."
     },
     "canvasSize": {
       "title": "Canvas size",

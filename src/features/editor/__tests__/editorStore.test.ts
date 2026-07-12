@@ -9,6 +9,9 @@ vi.mock('../../../workers/runPixelTask', () => ({
 
 // import after mocking so the store picks up the mocked runPixelTask
 const { useEditorStore } = await import('../editorStore')
+// 引擎实现依赖 runPixelTask，同样要在 mock 之后注册
+const { registerDefaultEngines } = await import('../../../engines')
+registerDefaultEngines()
 
 function makeMeta(overrides: Partial<ImageMeta> = {}): ImageMeta {
   return {
@@ -28,7 +31,21 @@ function makeDecoded(size = 32) {
   for (let y = 14; y < 18; y++) {
     for (let x = 14; x < 18; x++) setPixel(image, x, y, [255, 0, 0, 255])
   }
+  // 左上角一块透明区（>0.5%），让 loadImage 跳过自动预应用，聚焦各用例自身行为。
+  // RGB 保持背景绿，不影响基于颜色距离的断言。
+  for (let y = 0; y < 4; y++) {
+    for (let x = 0; x < 4; x++) setPixel(image, x, y, [10, 200, 10, 0])
+  }
   return { image, proxy: image, meta: makeMeta({ width: size, height: size }) }
+}
+
+/** 全不透明版本：触发上传后自动预应用去背景。 */
+function makeOpaqueDecoded(size = 32) {
+  const image: RasterImage = createRaster(size, size, [10, 200, 10, 255])
+  for (let y = 14; y < 18; y++) {
+    for (let x = 14; x < 18; x++) setPixel(image, x, y, [255, 0, 0, 255])
+  }
+  return { image, proxy: image, meta: makeMeta({ width: size, height: size, hasAlpha: false }) }
 }
 
 function actions() {
@@ -55,6 +72,36 @@ describe('editorStore: upload', () => {
     expect(item?.params.transform.scale).toBeCloseTo(16)
     expect(item?.params.transform.dx).toBeCloseTo(0)
     expect(item?.params.transform.dy).toBeCloseTo(0)
+  })
+})
+
+describe('editorStore: auto removal on load', () => {
+  test('opaque image gets background removal pre-applied', async () => {
+    await actions().loadImage(makeOpaqueDecoded())
+    const { item, undoStack } = useEditorStore.getState()
+    expect(item?.mask).not.toBeNull()
+    expect(item?.params.removal).toBeDefined()
+    // 背景（绿）被去除，主体（红）保留
+    expect(item!.mask![0]).toBe(0)
+    expect(item!.mask![15 * 32 + 15]).toBe(255)
+    // 自动应用入撤销栈，可一步撤销
+    expect(undoStack.length).toBe(1)
+  })
+
+  test('image with existing transparency is left untouched', async () => {
+    await actions().loadImage(makeDecoded())
+    const { item, undoStack } = useEditorStore.getState()
+    expect(item?.mask).toBeNull()
+    expect(item?.params.removal).toBeUndefined()
+    expect(undoStack.length).toBe(0)
+  })
+
+  test('one undo returns to the un-applied state', async () => {
+    await actions().loadImage(makeOpaqueDecoded())
+    actions().undo()
+    const { item } = useEditorStore.getState()
+    expect(item?.mask).toBeNull()
+    expect(item?.params.removal).toBeUndefined()
   })
 })
 

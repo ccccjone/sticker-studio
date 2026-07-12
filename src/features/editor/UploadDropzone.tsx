@@ -44,9 +44,8 @@ export function UploadDropzone({ multiple = false, onFiles }: UploadDropzoneProp
       setError(null)
       setLoading(true)
       decodeFile(file)
-        .then((decoded) => {
-          actions.loadImage(decoded)
-        })
+        // 链上 loadImage 的自动预应用，loading 状态覆盖到预应用完成
+        .then((decoded) => actions.loadImage(decoded))
         .catch(() => {
           setError('upload.decodeFailed')
         })

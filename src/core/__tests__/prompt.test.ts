@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { buildPrompt } from '../buildPrompt'
+import { buildPrompt } from '../prompt'
 
 const gridOpts = {
   lang: 'zh' as const,

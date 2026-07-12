@@ -7,6 +7,25 @@ import type { RasterImage } from './raster'
 
 const MAX_DIST = Math.sqrt(3 * 255 * 255)
 const CORNER_SIZE = 8
+const ALPHA_CUTOFF = 128
+const ALPHA_RATIO_THRESHOLD = 0.005
+
+/**
+ * 图片是否已含有效透明通道（alpha < 128 的像素占比 ≥ 0.5%）。
+ * 用于自动预应用去背景前的跳过判断：已抠好的透明 PNG 不再二次处理。
+ */
+export function hasSignificantAlpha(img: RasterImage): boolean {
+  const n = img.width * img.height
+  const threshold = n * ALPHA_RATIO_THRESHOLD
+  let transparent = 0
+  for (let i = 3; i < img.data.length; i += 4) {
+    if (img.data[i] < ALPHA_CUTOFF) {
+      transparent++
+      if (transparent >= threshold) return true
+    }
+  }
+  return false
+}
 
 /** 四角 8×8 区域的众数色，作为背景种子色。 */
 export function sampleCorners(img: RasterImage): [number, number, number] {

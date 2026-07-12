@@ -1,8 +1,6 @@
 /**
- * Shared export-time mask computation, extracted so it can be reused by both the
- * single-image editor and the batch workflow without either depending on the other's
- * store. Kept in sync with editorStore.exportImage's inline logic (not imported from
- * there — editorStore closes over its own state shape).
+ * Shared export-time mask computation, used by the single-image editor, the batch
+ * workflow and the splitter.
  *
  * Recomputes the removal mask at full (original) resolution from the recorded
  * removal params, then overlays any proxy-resolution brush edits (pixels that
@@ -10,8 +8,8 @@
  * mask. Returns null when the item has no mask at all (nothing to compose).
  */
 
+import { getRemovalEngine } from '../../core/engine'
 import { createMask } from '../../core/mask'
-import { runPixelTask } from '../../workers/runPixelTask'
 import type { EditorItem } from './types'
 
 export async function computeExportMask(item: EditorItem): Promise<Uint8Array | null> {
@@ -19,8 +17,7 @@ export async function computeExportMask(item: EditorItem): Promise<Uint8Array | 
   let fullMask: Uint8Array
   if (item.params.removal) {
     const { seed, tolerance, softness } = item.params.removal
-    const result = await runPixelTask({ kind: 'maskByColor', image: item.image, seed, tolerance, softness })
-    fullMask = result.kind === 'maskByColor' ? result.mask : createMask(item.image.width, item.image.height, 255)
+    fullMask = await getRemovalEngine().createMask(item.image, { seed, tolerance, softness })
   } else {
     fullMask = createMask(item.image.width, item.image.height, 255)
   }

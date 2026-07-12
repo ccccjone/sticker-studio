@@ -9,6 +9,9 @@ vi.mock('../../../workers/runPixelTask', () => ({
 
 const { useSplitterStore, resolvePieceName } = await import('../splitterStore')
 const { runPixelTask } = await import('../../../workers/runPixelTask')
+// 引擎实现依赖 runPixelTask，同样要在 mock 之后注册
+const { registerDefaultEngines } = await import('../../../engines')
+registerDefaultEngines()
 
 function actions() {
   return useSplitterStore.getState().actions
@@ -31,6 +34,27 @@ function makeSheet() {
     for (let x = 0; x < 40; x++) {
       const q = (y < 20 ? 0 : 2) + (x < 20 ? 0 : 1)
       setPixel(image, x, y, colors[q])
+    }
+  }
+  return { image, proxy: image, meta: makeMeta() }
+}
+
+/** A 40x40 white sheet with a 10x10 colored subject centered in each 20x20 quadrant, so auto removal keeps a subject. */
+function makeSubjectSheet() {
+  const image: RasterImage = createRaster(40, 40, [255, 255, 255, 255])
+  const colors: [number, number, number, number][] = [
+    [255, 0, 0, 255],
+    [0, 255, 0, 255],
+    [0, 0, 255, 255],
+    [255, 255, 0, 255],
+  ]
+  for (const [q, color] of colors.entries()) {
+    const ox = (q % 2) * 20 + 5
+    const oy = Math.floor(q / 2) * 20 + 5
+    for (let y = oy; y < oy + 10; y++) {
+      for (let x = ox; x < ox + 10; x++) {
+        setPixel(image, x, y, color)
+      }
     }
   }
   return { image, proxy: image, meta: makeMeta() }
@@ -213,6 +237,18 @@ describe('splitterStore: splitIntoPieces', () => {
     expect([bottomRight.image.data[i], bottomRight.image.data[i + 1], bottomRight.image.data[i + 2]]).toEqual([255, 255, 0])
   })
 
+  test('pieces of an opaque sheet get removal pre-applied after split', async () => {
+    actions().loadImage(makeSheet())
+    await actions().splitIntoPieces()
+    const { pieces } = useSplitterStore.getState()
+    expect(pieces).toHaveLength(4)
+    for (const p of pieces) {
+      // 每个象限纯色 → 种子=角色 → 全部被去除
+      expect(p.mask).not.toBeNull()
+      expect(p.params.removal).toBeDefined()
+    }
+  })
+
   test('is a no-op without a loaded sheet or with zero boxes', () => {
     actions().splitIntoPieces()
     expect(useSplitterStore.getState().pieces).toHaveLength(0)
@@ -221,9 +257,10 @@ describe('splitterStore: splitIntoPieces', () => {
 })
 
 describe('splitterStore: uniform settings vs per-piece customization', () => {
-  beforeEach(() => {
-    actions().loadImage(makeSheet())
-    actions().splitIntoPieces()
+  beforeEach(async () => {
+    // 纯色象限会被自动去背景整块移除（subject 为空），这里用带主体的 sheet
+    await actions().loadImage(makeSubjectSheet())
+    await actions().splitIntoPieces()
   })
 
   test('outline: editing one piece marks it customized; uniform apply skips only that piece', () => {

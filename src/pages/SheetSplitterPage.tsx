@@ -60,7 +60,7 @@ function SelectStep() {
   function handleSplit() {
     // Re-splitting discards any per-piece edits made in the edit step.
     if (pieces.length > 0 && !window.confirm(t('split.resplitConfirm'))) return
-    actions.splitIntoPieces()
+    void actions.splitIntoPieces()
   }
 
   return (

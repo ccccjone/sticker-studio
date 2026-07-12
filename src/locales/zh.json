@@ -72,7 +72,8 @@
       "tolerance": "容差",
       "softness": "边缘柔化",
       "apply": "应用",
-      "reset": "重置蒙版"
+      "reset": "重置蒙版",
+      "appliedHint": "已自动去除背景。效果不理想可调整参数后重新应用，或点击“重置蒙版”还原。"
     },
     "canvasSize": {
       "title": "画布尺寸",

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { createRaster, setPixel } from '../raster'
-import { maskByColor, sampleCorners } from '../removal'
+import { hasSignificantAlpha, maskByColor, sampleCorners } from '../removal'
 
 describe('sampleCorners', () => {
   test('returns the dominant corner color as background seed', () => {
@@ -9,6 +9,31 @@ describe('sampleCorners', () => {
     for (let y = 8; y < 12; y++)
       for (let x = 8; x < 12; x++) setPixel(img, x, y, [10, 20, 30, 255])
     expect(sampleCorners(img)).toEqual([240, 240, 240])
+  })
+})
+
+describe('hasSignificantAlpha', () => {
+  test('fully opaque image has no significant alpha', () => {
+    expect(hasSignificantAlpha(createRaster(20, 20, [255, 255, 255, 255]))).toBe(false)
+  })
+
+  test('image with a transparent region has significant alpha', () => {
+    const img = createRaster(20, 20, [255, 255, 255, 255])
+    // 10×10 = 25% 透明像素，远超 0.5% 阈值
+    for (let y = 0; y < 10; y++) for (let x = 0; x < 10; x++) setPixel(img, x, y, [0, 0, 0, 0])
+    expect(hasSignificantAlpha(img)).toBe(true)
+  })
+
+  test('a few semi-transparent edge pixels stay below the threshold', () => {
+    const img = createRaster(20, 20, [255, 255, 255, 255])
+    // 1/400 = 0.25% < 0.5%
+    setPixel(img, 0, 0, [255, 255, 255, 100])
+    expect(hasSignificantAlpha(img)).toBe(false)
+  })
+
+  test('alpha at or above 128 does not count as transparent', () => {
+    const img = createRaster(10, 10, [255, 255, 255, 128])
+    expect(hasSignificantAlpha(img)).toBe(false)
   })
 })
 
