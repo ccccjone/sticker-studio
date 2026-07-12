@@ -119,7 +119,37 @@
     }
   },
   "batch": {
-    "title": "Batch Processing"
+    "title": "Batch Processing",
+    "tooMany": "You can add up to 50 images at once; the rest were not added.",
+    "status": {
+      "pending": "Pending",
+      "edited": "Edited",
+      "processing": "Processing",
+      "failed": "Failed"
+    },
+    "list": {
+      "selectAll": "Select all",
+      "count": "{{count}} / {{max}}",
+      "select": "Select {{name}}",
+      "remove": "Remove {{name}}"
+    },
+    "toolbar": {
+      "scope": "Apply to",
+      "scopeCurrent": "Current only",
+      "scopeSelected": "Selected",
+      "scopeAll": "All",
+      "exportAll": "Export all (ZIP)",
+      "exportSelected": "Export selected ({{count}}, ZIP)",
+      "canvasSize": "Canvas size",
+      "fitMode": "Fit mode",
+      "outline": "Outline",
+      "outlineOn": "Enable (default style)",
+      "outlineOff": "Disable",
+      "format": "Format",
+      "rerunRemoval": "Re-run background removal",
+      "namePrefix": "Name prefix",
+      "applyNaming": "Apply naming"
+    }
   },
   "split": {
     "title": "Split a Sticker Sheet"

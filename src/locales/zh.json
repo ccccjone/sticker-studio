@@ -119,7 +119,37 @@
     }
   },
   "batch": {
-    "title": "批量处理图片"
+    "title": "批量处理图片",
+    "tooMany": "已超过单次批量 50 张的上限，超出部分未加入列表",
+    "status": {
+      "pending": "未处理",
+      "edited": "已编辑",
+      "processing": "处理中",
+      "failed": "失败"
+    },
+    "list": {
+      "selectAll": "全选",
+      "count": "{{count}} / {{max}} 张",
+      "select": "选中 {{name}}",
+      "remove": "移除 {{name}}"
+    },
+    "toolbar": {
+      "scope": "应用范围",
+      "scopeCurrent": "仅当前",
+      "scopeSelected": "选中项",
+      "scopeAll": "全部",
+      "exportAll": "导出全部（ZIP）",
+      "exportSelected": "导出选中（{{count}}，ZIP）",
+      "canvasSize": "画布尺寸",
+      "fitMode": "适配模式",
+      "outline": "描边",
+      "outlineOn": "启用（默认样式）",
+      "outlineOff": "关闭",
+      "format": "格式",
+      "rerunRemoval": "重新去背景",
+      "namePrefix": "命名前缀",
+      "applyNaming": "应用命名"
+    }
   },
   "split": {
     "title": "拆分表情包拼图"
