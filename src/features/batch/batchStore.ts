@@ -22,6 +22,7 @@ import {
 } from '../../canvas/renderExport'
 import { renderExport } from '../../canvas/renderExport'
 import { computeExportMask } from '../editor/exportHelpers'
+import { mergeBackgroundPatch, reclampBackground, type ExportBackground } from '../../core/background'
 import { fit, fitSubject, subjectBBox, type FitMode } from '../../core/layout'
 import { applyBrush, composeAlpha, createMask, type BrushMode, type ChangedPixel } from '../../core/mask'
 import { editedName, sequenceName } from '../../core/naming'
@@ -30,7 +31,7 @@ import { sampleCorners } from '../../core/removal'
 import { getRemovalEngine } from '../../core/engine'
 import { computeAutoRemoval } from '../editor/autoRemoval'
 import { projectToRotatedSpace } from '../editor/transformMath'
-import type { CanvasPreset, EditorActions, EditorItem, PreviewBg, SubjectRatio } from '../editor/types'
+import type { CanvasPreset, EditorActions, EditorItem, SubjectRatio } from '../editor/types'
 
 export const MAX_BATCH_ITEMS = 50
 
@@ -63,6 +64,8 @@ export interface BatchApplySettings {
   removal?: { tolerance: number; softness: number; seed?: [number, number, number] }
   format?: 'png' | 'jpeg'
   jpegBg?: string
+  /** null = 清除背景（透明）；对象 = 应用到范围（图片引用共享，bgFit 按各项画布钳制） */
+  background?: ExportBackground | null
   namePrefix?: string
 }
 
@@ -104,6 +107,11 @@ function clamp(v: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, v))
 }
 
+/** 画布尺寸变化后同步钳制图片背景取景。 */
+function withReclampedBg(params: EditParams): EditParams {
+  return { ...params, background: reclampBackground(params.background, params.canvasW, params.canvasH) }
+}
+
 function nextId(): string {
   return `batch-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
@@ -142,8 +150,6 @@ function buildBatchItem(decoded: { image: RasterImage; proxy: RasterImage; meta:
     fitMode: 'contain',
     outlineEnabled: false,
     outline: { widthPx: Math.round(canvasW * 0.04), color: [255, 255, 255, 255] },
-    previewBg: 'checkerboard',
-    previewBgColor: '#808080',
     params,
     status: 'pending',
     selected: true,
@@ -262,8 +268,9 @@ export const useBatchStore = create<BatchState>()((set, get) => {
         const touchesFormat = settings.format !== undefined
         const touchesJpegBg = settings.jpegBg !== undefined
         const touchesNaming = settings.namePrefix !== undefined
+        const touchesBackground = settings.background !== undefined
 
-        if (touchesFit || touchesOutline || touchesFormat || touchesJpegBg || touchesNaming) {
+        if (touchesFit || touchesOutline || touchesFormat || touchesJpegBg || touchesNaming || touchesBackground) {
           let orderIndex = 0
           set((state) => ({
             items: state.items.map((it) => {
@@ -302,6 +309,15 @@ export const useBatchStore = create<BatchState>()((set, get) => {
               if (touchesNaming) {
                 orderIndex += 1
                 next = { ...next, params: { ...next.params, fileName: sequenceName(settings.namePrefix!, orderIndex, targets.length) } }
+              }
+              if (touchesBackground) {
+                // 图片背景共享同一 RasterImage 引用，仅按各项画布尺寸重新钳制取景
+                const bg = settings.background === null
+                  ? undefined
+                  : reclampBackground(settings.background, next.params.canvasW, next.params.canvasH)
+                next = { ...next, params: { ...next.params, background: bg } }
+              } else if (touchesFit) {
+                next = { ...next, params: { ...next.params, background: reclampBackground(next.params.background, next.params.canvasW, next.params.canvasH) } }
               }
               return { ...next, status: 'edited' }
             }),
@@ -502,7 +518,7 @@ export const useBatchStore = create<BatchState>()((set, get) => {
       },
 
       setCanvasPreset(size: CanvasPreset) {
-        withCurrent((it) => ({ ...it, lockAspect: true, params: { ...it.params, canvasW: size, canvasH: size } }))
+        withCurrent((it) => ({ ...it, lockAspect: true, params: withReclampedBg({ ...it.params, canvasW: size, canvasH: size }) }))
       },
 
       setCanvasWidth(width) {
@@ -512,7 +528,7 @@ export const useBatchStore = create<BatchState>()((set, get) => {
           if (it.lockAspect && it.params.canvasW > 0) {
             h = clamp(Math.round((w * it.params.canvasH) / it.params.canvasW), MIN_CANVAS, MAX_CANVAS)
           }
-          return { ...it, params: { ...it.params, canvasW: w, canvasH: h } }
+          return { ...it, params: withReclampedBg({ ...it.params, canvasW: w, canvasH: h }) }
         })
       },
 
@@ -523,7 +539,7 @@ export const useBatchStore = create<BatchState>()((set, get) => {
           if (it.lockAspect && it.params.canvasH > 0) {
             w = clamp(Math.round((h * it.params.canvasW) / it.params.canvasH), MIN_CANVAS, MAX_CANVAS)
           }
-          return { ...it, params: { ...it.params, canvasW: w, canvasH: h } }
+          return { ...it, params: withReclampedBg({ ...it.params, canvasW: w, canvasH: h }) }
         })
       },
 
@@ -633,8 +649,14 @@ export const useBatchStore = create<BatchState>()((set, get) => {
         })
       },
 
-      setPreviewBg(bg: PreviewBg, color?: string) {
-        withCurrent((it) => ({ ...it, previewBg: bg, previewBgColor: color ?? it.previewBgColor }))
+      setBackground(patch) {
+        withCurrent((it) => ({
+          ...it,
+          params: {
+            ...it.params,
+            background: mergeBackgroundPatch(it.params.background, patch, it.params.canvasW, it.params.canvasH),
+          },
+        }))
       },
 
       setExportFormat(format) {

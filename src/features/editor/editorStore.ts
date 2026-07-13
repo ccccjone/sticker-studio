@@ -13,6 +13,7 @@ import {
 } from '../../canvas/renderExport'
 import { renderExport } from '../../canvas/renderExport'
 import { encodeRaster, downloadBlob } from '../../canvas/encode'
+import { mergeBackgroundPatch, reclampBackground as reclampBg } from '../../core/background'
 import { fit, fitSubject, subjectBBox } from '../../core/layout'
 import { applyBrush, composeAlpha, createMask, type BrushMode, type ChangedPixel } from '../../core/mask'
 import { editedName } from '../../core/naming'
@@ -21,7 +22,7 @@ import { getRemovalEngine } from '../../core/engine'
 import { hasSignificantAlpha, sampleCorners } from '../../core/removal'
 import { computeExportMask } from './exportHelpers'
 import { projectToRotatedSpace } from './transformMath'
-import type { CanvasPreset, EditorActions, EditorItem, PreviewBg, RemovalDraft, SubjectRatio } from './types'
+import type { CanvasPreset, EditorActions, EditorItem, RemovalDraft, SubjectRatio } from './types'
 
 const MIN_CANVAS = 16
 const MAX_CANVAS = 4096
@@ -57,6 +58,15 @@ function clamp(v: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, v))
 }
 
+/** 画布尺寸变化后同步钳制图片背景取景。 */
+function reclampBackground(params: EditParams): EditParams {
+  return { ...params, background: reclampBg(params.background, params.canvasW, params.canvasH) }
+}
+
+function mergeBackground(params: EditParams, patch: Parameters<EditorActions['setBackground']>[0]) {
+  return mergeBackgroundPatch(params.background, patch, params.canvasW, params.canvasH)
+}
+
 function nextId(): string {
   return `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
@@ -85,8 +95,6 @@ function buildItem(decoded: { image: RasterImage; proxy: RasterImage; meta: Imag
     fitMode: 'contain',
     outlineEnabled: false,
     outline: { widthPx: Math.round(canvasW * 0.04), color: [255, 255, 255, 255] },
-    previewBg: 'checkerboard',
-    previewBgColor: '#808080',
     params,
   }
 }
@@ -253,7 +261,7 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
     setCanvasPreset(size: CanvasPreset) {
       const { item } = get()
       if (!item) return
-      set({ item: { ...item, lockAspect: true, params: { ...item.params, canvasW: size, canvasH: size } } })
+      set({ item: { ...item, lockAspect: true, params: reclampBackground({ ...item.params, canvasW: size, canvasH: size }) } })
     },
 
     setCanvasWidth(width) {
@@ -264,7 +272,7 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
       if (item.lockAspect && item.params.canvasW > 0) {
         h = clamp(Math.round((w * item.params.canvasH) / item.params.canvasW), MIN_CANVAS, MAX_CANVAS)
       }
-      set({ item: { ...item, params: { ...item.params, canvasW: w, canvasH: h } } })
+      set({ item: { ...item, params: reclampBackground({ ...item.params, canvasW: w, canvasH: h }) } })
     },
 
     setCanvasHeight(height) {
@@ -275,7 +283,7 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
       if (item.lockAspect && item.params.canvasH > 0) {
         w = clamp(Math.round((h * item.params.canvasW) / item.params.canvasH), MIN_CANVAS, MAX_CANVAS)
       }
-      set({ item: { ...item, params: { ...item.params, canvasW: w, canvasH: h } } })
+      set({ item: { ...item, params: reclampBackground({ ...item.params, canvasW: w, canvasH: h }) } })
     },
 
     setLockAspect(locked) {
@@ -407,10 +415,10 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
       set({ item: { ...item, outline, params: { ...item.params, outline: item.outlineEnabled ? outline : item.params.outline } } })
     },
 
-    setPreviewBg(bg: PreviewBg, color?: string) {
+    setBackground(patch) {
       const { item } = get()
       if (!item) return
-      set({ item: { ...item, previewBg: bg, previewBgColor: color ?? item.previewBgColor } })
+      set({ item: { ...item, params: { ...item.params, background: mergeBackground(item.params, patch) } } })
     },
 
     setExportFormat(format) {

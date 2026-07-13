@@ -25,6 +25,8 @@ export function BatchToolbar() {
   const [namePrefix, setNamePrefix] = useState('sticker')
   const [exporting, setExporting] = useState<'all' | 'selected' | null>(null)
 
+  const currentBg = useBatchStore((s) => s.items.find((it) => it.id === s.currentId)?.params.background)
+
   const selectedCount = items.filter((it) => it.selected).length
 
   async function handleExport(exportScope: 'all' | 'selected') {
@@ -112,6 +114,16 @@ export function BatchToolbar() {
           <span className="text-zinc-500">{t('batch.toolbar.format')}:</span>
           <Chip onClick={() => void actions.applyTo(scope, { format: 'png' })}>PNG</Chip>
           <Chip onClick={() => void actions.applyTo(scope, { format: 'jpeg' })}>JPEG</Chip>
+        </div>
+
+        <div className="flex items-center gap-1">
+          <span className="text-zinc-500">{t('batch.toolbar.background')}:</span>
+          {currentBg && (
+            <Chip onClick={() => void actions.applyTo(scope, { background: currentBg })}>
+              {t('batch.toolbar.applyCurrentBg')}
+            </Chip>
+          )}
+          <Chip onClick={() => void actions.applyTo(scope, { background: null })}>{t('batch.toolbar.clearBg')}</Chip>
         </div>
       </div>
 

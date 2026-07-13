@@ -13,6 +13,7 @@ import { Button } from '../../components/Button'
 import { Chip } from '../../components/Chip'
 import { Icon, type IconName } from '../../components/Icon'
 import { composeAlpha } from '../../core/mask'
+import { BackgroundCropper } from './BackgroundCropper'
 import { useEditorContext } from './EditorContext'
 import { fitView } from './viewportMath'
 
@@ -24,12 +25,6 @@ const TOOLS: readonly [Tool, IconName][] = [
   ['restore', 'brush'],
   ['eyedropper', 'eyedropper'],
 ]
-
-const PREVIEW_BG_CLASS: Record<string, string> = {
-  white: 'bg-white',
-  black: 'bg-black',
-  gray: 'bg-zinc-500',
-}
 
 export function EditorCanvas() {
   const { t } = useTranslation()
@@ -66,6 +61,16 @@ export function EditorCanvas() {
       return null
     }
   }, [proxy, mask])
+
+  const bgImage = item?.params.background?.kind === 'image' ? item.params.background.image : undefined
+  const bgCanvas = useMemo(() => {
+    if (!bgImage) return null
+    try {
+      return rasterToCanvas(bgImage.proxy)
+    } catch {
+      return null
+    }
+  }, [bgImage])
 
   if (!item) return null
 
@@ -120,10 +125,7 @@ export function EditorCanvas() {
     actions.setScale(transform.scale * factor)
   }
 
-  const previewBgClass = item.previewBg === 'checkerboard' ? 'checkerboard' : (PREVIEW_BG_CLASS[item.previewBg] ?? '')
-  const previewBgStyle =
-    item.previewBg === 'custom' ? { backgroundColor: item.previewBgColor } : undefined
-
+  const bg = item.params.background
   const zoomPercent = Math.round(transform.scale * 100)
 
   return (
@@ -158,11 +160,7 @@ export function EditorCanvas() {
         </div>
       </div>
 
-      <div
-        ref={wrapperRef}
-        className={`overflow-hidden rounded-2xl border border-zinc-200 ${previewBgClass}`}
-        style={previewBgStyle}
-      >
+      <div ref={wrapperRef} className="checkerboard overflow-hidden rounded-2xl border border-zinc-200">
         <Stage
           width={stageW}
           height={stageH}
@@ -177,6 +175,27 @@ export function EditorCanvas() {
           <Layer>
             {/* 视口：把导出画布等比缩放居中到 Stage；内部坐标仍是画布像素 */}
             <Group x={view.viewX} y={view.viewY} scaleX={view.viewScale} scaleY={view.viewScale}>
+              {/* 背景层（clip 到画布矩形）：纯色或背景图,所见即所得 */}
+              {bg && (
+                <Group clipX={0} clipY={0} clipWidth={canvasW} clipHeight={canvasH} listening={false}>
+                  {bg.kind === 'color' ? (
+                    <Rect x={0} y={0} width={canvasW} height={canvasH} fill={bg.color} />
+                  ) : (
+                    bgCanvas &&
+                    bgImage && (
+                      <KonvaImage
+                        image={bgCanvas}
+                        x={bg.bgFit.dx}
+                        y={bg.bgFit.dy}
+                        scaleX={bg.bgFit.scale * (bgImage.full.width / bgImage.proxy.width)}
+                        scaleY={bg.bgFit.scale * (bgImage.full.width / bgImage.proxy.width)}
+                        width={bgImage.proxy.width}
+                        height={bgImage.proxy.height}
+                      />
+                    )
+                  )}
+                </Group>
+              )}
               <Group
                 x={transform.dx}
                 y={transform.dy}
@@ -219,6 +238,8 @@ export function EditorCanvas() {
         <span>{t('editor.status.zoom', { percent: zoomPercent })}</span>
         <span>{t('editor.status.canvasSize', { width: canvasW, height: canvasH })}</span>
       </div>
+
+      <BackgroundCropper />
     </div>
   )
 }

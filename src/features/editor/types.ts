@@ -6,11 +6,10 @@
 
 import type { ImageMeta } from '../../canvas/decode'
 import type { EditParams, OutlineParams } from '../../canvas/renderExport'
+import type { ExportBackground } from '../../core/background'
 import type { BrushMode } from '../../core/mask'
 import type { RasterImage } from '../../core/raster'
 import type { FitMode } from '../../core/layout'
-
-export type PreviewBg = 'checkerboard' | 'white' | 'black' | 'gray' | 'custom'
 
 export type CanvasPreset = 256 | 512 | 1024 | 2048
 
@@ -39,8 +38,6 @@ export interface EditorItem {
   fitMode: FitMode
   outlineEnabled: boolean
   outline: OutlineParams
-  previewBg: PreviewBg
-  previewBgColor: string
   params: EditParams
 }
 
@@ -80,8 +77,8 @@ export interface EditorActions {
   setOutlineColor(color: [number, number, number, number]): void
   setOutlineWidth(widthPx: number): void
 
-  // 预览背景
-  setPreviewBg(bg: PreviewBg, color?: string): void
+  // 背景（null = 切回透明；设 image 时若未显式给 bgFit 则按 bgCover 初始化）
+  setBackground(patch: Partial<ExportBackground> | null): void
 
   // 导出
   setExportFormat(format: 'png' | 'jpeg'): void

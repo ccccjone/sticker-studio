@@ -57,7 +57,7 @@ export async function exportSplitZip(pieces: SplitterPiece[]): Promise<SplitZipR
       format = piece.params.format
       width = piece.params.canvasW
       height = piece.params.canvasH
-      transparent = transparent || (piece.params.format === 'png' && mask !== null)
+      transparent = transparent || (piece.params.format === 'png' && mask !== null && !piece.params.background?.includeInExport)
     } catch {
       files.push({ originalName: piece.meta.name, exportName, status: 'failed' })
     }

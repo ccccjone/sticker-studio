@@ -56,7 +56,7 @@ export async function exportBatchZip(items: BatchItem[], scope: 'all' | 'selecte
       format = item.params.format
       width = item.params.canvasW
       height = item.params.canvasH
-      transparent = transparent || (item.params.format === 'png' && mask !== null)
+      transparent = transparent || (item.params.format === 'png' && mask !== null && !item.params.background?.includeInExport)
     } catch {
       files.push({ originalName: item.meta.name, exportName, status: 'failed' })
     }

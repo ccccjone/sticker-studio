@@ -4,6 +4,7 @@
  * JPEG 背景色在 encode 阶段处理，这里始终输出带 alpha 的 RasterImage。
  */
 
+import { composeOver, hexToRgb, type ExportBackground } from '../core/background'
 import { composeAlpha } from '../core/mask'
 import { addOutline } from '../core/outline'
 import { createRaster, cropRaster, type RasterImage, type Rgba } from '../core/raster'
@@ -40,6 +41,8 @@ export interface EditParams {
   /** 记录在参数里供重跑；renderExport 只消费现成 mask */
   removal?: RemovalParams
   outline?: OutlineParams
+  /** undefined = 透明背景（现状行为） */
+  background?: ExportBackground
   format: 'png' | 'jpeg'
   jpegBg: string
   fileName: string
@@ -136,10 +139,39 @@ export function renderExport(
     }
   }
 
+  let sticker = out
   if (params.outline && params.outline.widthPx > 0) {
     const pad = Math.ceil(params.outline.widthPx)
     const outlined = addOutline(out, params.outline.widthPx, params.outline.color)
-    return cropRaster(outlined, pad, pad, canvasW, canvasH)
+    sticker = cropRaster(outlined, pad, pad, canvasW, canvasH)
+  }
+
+  const bg = params.background
+  if (!bg?.includeInExport) return sticker
+  return composeOver(sticker, renderBackground(bg, canvasW, canvasH))
+}
+
+/** 生成画布尺寸的背景层：纯色填充，或背景图按 bgFit 双线性重采样。 */
+function renderBackground(bg: ExportBackground, canvasW: number, canvasH: number): RasterImage {
+  if (bg.kind === 'color' || !bg.image) {
+    return createRaster(canvasW, canvasH, hexToRgb(bg.color))
+  }
+  const img = bg.image.full
+  const { scale, dx, dy } = bg.bgFit
+  const out = createRaster(canvasW, canvasH)
+  const sample: Rgba = [0, 0, 0, 0]
+  for (let oy = 0; oy < canvasH; oy++) {
+    for (let ox = 0; ox < canvasW; ox++) {
+      const sx = (ox + 0.5 - dx) / scale - 0.5
+      const sy = (oy + 0.5 - dy) / scale - 0.5
+      if (sx < -0.5 || sy < -0.5 || sx > img.width - 0.5 || sy > img.height - 0.5) continue
+      bilinearSample(img, sx, sy, sample)
+      const p = (oy * canvasW + ox) * 4
+      out.data[p] = sample[0]
+      out.data[p + 1] = sample[1]
+      out.data[p + 2] = sample[2]
+      out.data[p + 3] = sample[3]
+    }
   }
   return out
 }

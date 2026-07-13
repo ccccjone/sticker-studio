@@ -117,13 +117,17 @@
       "width": "宽度",
       "exportOnlyHint": "描边效果仅在导出结果中生效，画布预览不实时显示。"
     },
-    "previewBg": {
-      "title": "预览背景",
-      "checkerboard": "棋盘格",
-      "white": "白色",
-      "black": "黑色",
-      "gray": "灰色",
-      "custom": "自定义"
+    "background": {
+      "title": "背景",
+      "transparent": "透明",
+      "color": "纯色",
+      "image": "图片",
+      "upload": "上传背景图",
+      "change": "更换图片",
+      "include": "导出时包含背景",
+      "cropTitle": "背景取景(虚线框 = 导出画布范围)",
+      "resetCrop": "重置取景",
+      "cropHint": "拖动背景图调整位置,滚轮缩放;主画布实时显示合成效果。"
     },
     "export": {
       "title": "导出",
@@ -166,7 +170,10 @@
       "format": "格式",
       "rerunRemoval": "重新去背景",
       "namePrefix": "命名前缀",
-      "applyNaming": "应用命名"
+      "applyNaming": "应用命名",
+      "background": "背景",
+      "applyCurrentBg": "应用当前项背景",
+      "clearBg": "清除"
     }
   },
   "split": {
@@ -215,7 +222,8 @@
       "fitMode": "适配模式",
       "subjectRatio": "主体占比",
       "outline": "描边",
-      "format": "格式"
+      "format": "格式",
+      "background": "背景"
     },
     "export": {
       "namingTitle": "命名规则",

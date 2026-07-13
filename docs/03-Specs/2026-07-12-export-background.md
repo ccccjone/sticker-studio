@@ -87,7 +87,13 @@ export interface ExportBackground {
 3. 各 store `setBackground`：editorStore 直改；batch scope 传播；splitter uniform 传播 + customized 不覆盖。
 4. Playwright：单图纯色背景导出角像素=背景色；背景图导出角像素=图；透明导出回归；批量/拆分 ZIP 回归；manifest transparent 联动。
 
-## 7. 非目标
+## 7. 实现口径说明（2026-07-12）
+
+- 批量工具栏的背景快捷块为「应用当前项背景 / 清除」（把当前项的背景按范围传播），完整背景编辑走右侧共享背景面板。
+- 拆分统一设置面板提供 透明 / 纯色；**图片背景**走单张编辑（共享背景面板 + `customized('background')` 保护），统一图片背景可后续按需求追加。
+- 「导出时包含背景」开关状态在切换背景类型（纯色 ↔ 图片）时保留。
+
+## 8. 非目标
 
 - 背景旋转/翻转、滤镜/模糊、多背景素材库。
 - 背景独立于画布比例的自由裁剪（裁剪框始终锁画布宽高比）。

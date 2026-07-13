@@ -103,6 +103,41 @@ export function UniformSettingsPanel() {
         </label>
       </div>
 
+      <div className="mb-3 flex items-center gap-2 text-sm">
+        <span className="text-xs text-zinc-500">{t('split.uniform.background')}</span>
+        <Chip
+          selected={!uniform.background}
+          className={!uniform.background ? '' : '!bg-white hover:!bg-zinc-100'}
+          onClick={() => actions.applyUniformSettings({ background: undefined })}
+        >
+          {t('editor.background.transparent')}
+        </Chip>
+        <Chip
+          selected={uniform.background?.kind === 'color'}
+          className={uniform.background?.kind === 'color' ? '' : '!bg-white hover:!bg-zinc-100'}
+          onClick={() =>
+            actions.applyUniformSettings({
+              background: {
+                kind: 'color',
+                color: uniform.background?.color ?? '#ffffff',
+                bgFit: { scale: 1, dx: 0, dy: 0 },
+                includeInExport: true,
+              },
+            })
+          }
+        >
+          {t('editor.background.color')}
+        </Chip>
+        {uniform.background?.kind === 'color' && (
+          <input
+            type="color"
+            value={uniform.background.color}
+            onChange={(e) => actions.applyUniformSettings({ background: { ...uniform.background!, color: e.target.value } })}
+            aria-label={t('editor.background.color')}
+          />
+        )}
+      </div>
+
       <div className="flex items-center gap-2 text-sm">
         <span className="text-xs text-zinc-500">{t('split.uniform.format')}</span>
 <Chip selected={uniform.format === 'png'} className={uniform.format === 'png' ? '' : '!bg-white hover:!bg-zinc-100'} onClick={() => actions.applyUniformSettings({ format: 'png' })}>

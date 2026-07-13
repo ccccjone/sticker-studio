@@ -389,3 +389,24 @@ describe('splitterStore: export selection', () => {
     expect(useSplitterStore.getState().pieces.every((p) => p.selected)).toBe(true)
   })
 })
+
+describe('splitterStore: background', () => {
+  beforeEach(async () => {
+    await actions().loadImage(makeSubjectSheet())
+    await actions().splitIntoPieces()
+  })
+
+  test('applyUniformSettings 传播背景到未定制贴纸;setBackground 标记 customized 后不被覆盖', () => {
+    const [p0, p1] = useSplitterStore.getState().pieces
+    actions().selectPiece(p0.id)
+    actions().setBackground({ kind: 'color', color: '#112233' })
+    const pieces = () => useSplitterStore.getState().pieces
+    expect(pieces().find((p) => p.id === p0.id)!.customized.has('background')).toBe(true)
+
+    actions().applyUniformSettings({
+      background: { kind: 'color', color: '#7c3aed', bgFit: { scale: 1, dx: 0, dy: 0 }, includeInExport: true },
+    })
+    expect(pieces().find((p) => p.id === p0.id)!.params.background?.color).toBe('#112233') // 定制保护
+    expect(pieces().find((p) => p.id === p1.id)!.params.background?.color).toBe('#7c3aed') // 统一生效
+  })
+})

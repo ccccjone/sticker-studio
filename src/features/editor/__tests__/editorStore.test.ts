@@ -242,3 +242,40 @@ describe('editorStore: fit mode', () => {
     expect(item?.params.transform.scale).toBeCloseTo(item!.params.canvasW / item!.image.width)
   })
 })
+
+describe('editorStore: background', () => {
+  test('setBackground 设纯色背景并默认参与导出', () => {
+    actions().loadImage(makeDecoded())
+    actions().setBackground({ kind: 'color', color: '#ff8000' })
+    const bg = useEditorStore.getState().item?.params.background
+    expect(bg?.kind).toBe('color')
+    expect(bg?.color).toBe('#ff8000')
+    expect(bg?.includeInExport).toBe(true)
+  })
+
+  test('setBackground 设图片背景时按 bgCover 初始化 bgFit', () => {
+    actions().loadImage(makeDecoded())
+    const bgImg = createRaster(16, 16, [0, 255, 0, 255])
+    actions().setBackground({ kind: 'image', image: { full: bgImg, proxy: bgImg } })
+    const bg = useEditorStore.getState().item?.params.background
+    expect(bg?.kind).toBe('image')
+    expect(bg?.bgFit.scale).toBeCloseTo(32) // 512/16
+    expect(bg?.bgFit.dx).toBeCloseTo(0)
+  })
+
+  test('setBackground(null) 切回透明', () => {
+    actions().loadImage(makeDecoded())
+    actions().setBackground({ kind: 'color', color: '#ff8000' })
+    actions().setBackground(null)
+    expect(useEditorStore.getState().item?.params.background).toBeUndefined()
+  })
+
+  test('画布尺寸变化后图片背景 bgFit 重新钳制,始终盖满画布', () => {
+    actions().loadImage(makeDecoded())
+    const bgImg = createRaster(16, 16, [0, 255, 0, 255])
+    actions().setBackground({ kind: 'image', image: { full: bgImg, proxy: bgImg } })
+    actions().setCanvasWidth(1024) // 画布变宽,scale 下限 1024/16=64
+    const bg = useEditorStore.getState().item?.params.background
+    expect(bg?.bgFit.scale).toBeGreaterThanOrEqual(64 - 1e-9)
+  })
+})

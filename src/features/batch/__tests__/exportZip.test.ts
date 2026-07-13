@@ -33,8 +33,6 @@ function makeItem(overrides: Partial<BatchItem> = {}): BatchItem {
     fitMode: 'contain',
     outlineEnabled: false,
     outline: { widthPx: 0, color: [255, 255, 255, 255] },
-    previewBg: 'checkerboard',
-    previewBgColor: '#808080',
     params: {
       canvasW: 16,
       canvasH: 16,

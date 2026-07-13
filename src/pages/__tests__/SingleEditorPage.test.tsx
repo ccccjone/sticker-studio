@@ -42,7 +42,7 @@ describe('SingleEditorPage', () => {
     expect(screen.getByText('画布尺寸')).toBeInTheDocument()
     expect(screen.getByText('位置与缩放')).toBeInTheDocument()
     expect(screen.getByText('描边')).toBeInTheDocument()
-    expect(screen.getByText('预览背景')).toBeInTheDocument()
+    expect(screen.getByText('背景')).toBeInTheDocument()
     expect(screen.getByText('导出')).toBeInTheDocument()
     expect(screen.getByText(/cat\.png/)).toBeInTheDocument()
   })

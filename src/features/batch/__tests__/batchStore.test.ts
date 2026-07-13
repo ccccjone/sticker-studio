@@ -267,3 +267,42 @@ describe('batchStore: applyTo scopes', () => {
     expect(items.map((it) => it.params.fileName)).toEqual(['sticker-01', 'sticker-02', 'sticker-03'])
   })
 })
+
+describe('batchStore: background', () => {
+  test('setBackground 作用于当前项', async () => {
+    await actions().addFiles([makeFile('a.png'), makeFile('b.png')])
+    const [first, second] = useBatchStore.getState().items
+    actions().selectItem(first.id)
+    actions().setBackground({ kind: 'color', color: '#112233' })
+    const items = useBatchStore.getState().items
+    expect(items.find((i) => i.id === first.id)?.params.background?.color).toBe('#112233')
+    expect(items.find((i) => i.id === second.id)?.params.background).toBeUndefined()
+  })
+
+  test('applyTo 按范围传播背景,图片引用共享且 bgFit 按各自画布钳制', async () => {
+    await actions().addFiles([makeFile('a.png'), makeFile('b.png')])
+    const bgImg = createRaster(16, 16, [0, 255, 0, 255])
+    const background = {
+      kind: 'image' as const,
+      color: '#ffffff',
+      image: { full: bgImg, proxy: bgImg },
+      bgFit: { scale: 1, dx: 0, dy: 0 },
+      includeInExport: true,
+    }
+    await actions().applyTo('all', { background })
+    const items = useBatchStore.getState().items
+    for (const it of items) {
+      const bg = it.params.background
+      expect(bg?.kind).toBe('image')
+      expect(bg?.image?.full).toBe(bgImg) // 共享引用,不复制像素
+      expect(bg?.bgFit.scale).toBeGreaterThanOrEqual(it.params.canvasW / 16 - 1e-9)
+    }
+  })
+
+  test('applyTo({ background: null }) 清除背景', async () => {
+    await actions().addFiles([makeFile('a.png')])
+    actions().setBackground({ kind: 'color', color: '#112233' })
+    await actions().applyTo('all', { background: null })
+    expect(useBatchStore.getState().items[0].params.background).toBeUndefined()
+  })
+})

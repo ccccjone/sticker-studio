@@ -11,7 +11,8 @@ export function ExportPanel() {
   const [exporting, setExporting] = useState(false)
   if (!item) return null
   const { format, jpegBg, fileName, canvasW, canvasH } = item.params
-  const transparent = format === 'png' && (item.mask !== null || item.meta.hasAlpha)
+  const transparent =
+    format === 'png' && (item.mask !== null || item.meta.hasAlpha) && !item.params.background?.includeInExport
 
   async function handleExport() {
     setExporting(true)

@@ -117,13 +117,17 @@
       "width": "Width",
       "exportOnlyHint": "The outline only appears in the exported image, not in this live preview."
     },
-    "previewBg": {
-      "title": "Preview background",
-      "checkerboard": "Checkerboard",
-      "white": "White",
-      "black": "Black",
-      "gray": "Gray",
-      "custom": "Custom"
+    "background": {
+      "title": "Background",
+      "transparent": "Transparent",
+      "color": "Solid color",
+      "image": "Image",
+      "upload": "Upload image",
+      "change": "Change image",
+      "include": "Include background in export",
+      "cropTitle": "Background framing (dashed box = export canvas)",
+      "resetCrop": "Reset framing",
+      "cropHint": "Drag the image to reposition, scroll to zoom; the main canvas previews the composite."
     },
     "export": {
       "title": "Export",
@@ -166,7 +170,10 @@
       "format": "Format",
       "rerunRemoval": "Re-run background removal",
       "namePrefix": "Name prefix",
-      "applyNaming": "Apply naming"
+      "applyNaming": "Apply naming",
+      "background": "Background",
+      "applyCurrentBg": "Apply current background",
+      "clearBg": "Clear"
     }
   },
   "split": {
@@ -215,7 +222,8 @@
       "fitMode": "Fit mode",
       "subjectRatio": "Subject ratio",
       "outline": "Outline",
-      "format": "Format"
+      "format": "Format",
+      "background": "Background"
     },
     "export": {
       "namingTitle": "Naming rule",

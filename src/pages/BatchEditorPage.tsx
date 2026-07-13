@@ -5,7 +5,7 @@ import { EditorContext } from '../features/editor/EditorContext'
 import { CanvasSizePanel } from '../features/editor/panels/CanvasSizePanel'
 import { ExportPanel } from '../features/editor/panels/ExportPanel'
 import { OutlinePanel } from '../features/editor/panels/OutlinePanel'
-import { PreviewBgPanel } from '../features/editor/panels/PreviewBgPanel'
+import { BackgroundPanel } from '../features/editor/panels/BackgroundPanel'
 import { RemovalPanel } from '../features/editor/panels/RemovalPanel'
 import { TransformPanel } from '../features/editor/panels/TransformPanel'
 import { UploadDropzone } from '../features/editor/UploadDropzone'
@@ -53,7 +53,7 @@ function BatchWorkspace() {
             <CanvasSizePanel />
             <TransformPanel />
             <OutlinePanel />
-            <PreviewBgPanel />
+            <BackgroundPanel />
             <ExportPanel />
           </div>
         </div>

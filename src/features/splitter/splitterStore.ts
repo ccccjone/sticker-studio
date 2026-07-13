@@ -20,6 +20,7 @@ import { create } from 'zustand'
 import type { ImageMeta } from '../../canvas/decode'
 import { defaultTransform, type EditParams, type OutlineParams, type RemovalParams, type Rotation } from '../../canvas/renderExport'
 import { createBoxId, splitGrid, type CropBox } from '../../core/grid'
+import { mergeBackgroundPatch, reclampBackground, type ExportBackground } from '../../core/background'
 import { fit, fitSubject, subjectBBox, type FitMode } from '../../core/layout'
 import { applyBrush, composeAlpha, createMask, type BrushMode, type ChangedPixel } from '../../core/mask'
 import { rowColName, sequenceName } from '../../core/naming'
@@ -31,7 +32,7 @@ import { computeAutoRemoval } from '../editor/autoRemoval'
 // no runtime import cycle (type imports are erased at compile time).
 import { exportSinglePiece } from './exportZip'
 import { projectToRotatedSpace } from '../editor/transformMath'
-import type { CanvasPreset, EditorActions, EditorItem, PreviewBg, SubjectRatio } from '../editor/types'
+import type { CanvasPreset, EditorActions, EditorItem, SubjectRatio } from '../editor/types'
 
 export type SplitStep = 'upload' | 'select' | 'edit' | 'export'
 const STEP_ORDER: SplitStep[] = ['upload', 'select', 'edit', 'export']
@@ -40,7 +41,7 @@ export type ArrangementPreset = '2x2' | '2x4' | '3x3' | '4x4' | 'custom' | 'manu
 
 export type NamingRule = 'sequence' | 'rowCol'
 
-export type CustomizedField = 'size' | 'fitMode' | 'subjectRatio' | 'outline' | 'format'
+export type CustomizedField = 'size' | 'fitMode' | 'subjectRatio' | 'outline' | 'format' | 'background'
 
 export interface SplitGridOptions {
   rows: number
@@ -70,6 +71,8 @@ export interface UniformSettings {
   outlineWidthPx: number
   format: 'png' | 'jpeg'
   jpegBg: string
+  /** undefined = 透明；图片背景在贴纸间共享引用 */
+  background?: ExportBackground
 }
 
 export interface SplitterActions extends EditorActions {
@@ -147,6 +150,11 @@ const DEFAULT_UNIFORM: UniformSettings = {
 
 function clamp(v: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, v))
+}
+
+/** 画布尺寸变化后同步钳制图片背景取景。 */
+function withReclampedBg(params: EditParams): EditParams {
+  return { ...params, background: reclampBackground(params.background, params.canvasW, params.canvasH) }
 }
 
 function nextPieceId(): string {
@@ -258,8 +266,6 @@ function buildPiece(
     fitMode: uniform.fitMode,
     outlineEnabled: uniform.outlineEnabled,
     outline,
-    previewBg: 'checkerboard',
-    previewBgColor: '#808080',
     params: {
       canvasW: uniform.canvasW,
       canvasH: uniform.canvasH,
@@ -494,6 +500,7 @@ export const useSplitterStore = create<SplitterState>()((set, get) => {
           const touchesSubjectRatio = patch.subjectRatio !== undefined
           const touchesOutline = patch.outlineEnabled !== undefined || patch.outlineColor !== undefined || patch.outlineWidthPx !== undefined
           const touchesFormat = patch.format !== undefined || patch.jpegBg !== undefined
+          const touchesBackground = 'background' in patch
 
           const pieces = state.pieces.map((piece) => {
             let next = piece
@@ -544,6 +551,19 @@ export const useSplitterStore = create<SplitterState>()((set, get) => {
                   jpegBg: patch.jpegBg ?? next.params.jpegBg,
                 },
               }
+            }
+
+            if (touchesBackground && !piece.customized.has('background')) {
+              // 图片背景共享引用，仅按各贴纸画布尺寸重新钳制取景
+              next = {
+                ...next,
+                params: {
+                  ...next.params,
+                  background: reclampBackground(uniformSettings.background, next.params.canvasW, next.params.canvasH),
+                },
+              }
+            } else if (touchesSize && !sizeLocked) {
+              next = { ...next, params: withReclampedBg(next.params) }
             }
 
             return next
@@ -690,7 +710,7 @@ export const useSplitterStore = create<SplitterState>()((set, get) => {
       },
 
       setCanvasPreset(size: CanvasPreset) {
-        withCurrentPiece((p) => markCustomized({ ...p, lockAspect: true, params: { ...p.params, canvasW: size, canvasH: size } }, 'size'))
+        withCurrentPiece((p) => markCustomized({ ...p, lockAspect: true, params: withReclampedBg({ ...p.params, canvasW: size, canvasH: size }) }, 'size'))
       },
 
       setCanvasWidth(width) {
@@ -700,7 +720,7 @@ export const useSplitterStore = create<SplitterState>()((set, get) => {
           if (p.lockAspect && p.params.canvasW > 0) {
             h = clamp(Math.round((w * p.params.canvasH) / p.params.canvasW), MIN_CANVAS, MAX_CANVAS)
           }
-          return markCustomized({ ...p, params: { ...p.params, canvasW: w, canvasH: h } }, 'size')
+          return markCustomized({ ...p, params: withReclampedBg({ ...p.params, canvasW: w, canvasH: h }) }, 'size')
         })
       },
 
@@ -711,7 +731,7 @@ export const useSplitterStore = create<SplitterState>()((set, get) => {
           if (p.lockAspect && p.params.canvasH > 0) {
             w = clamp(Math.round((h * p.params.canvasW) / p.params.canvasH), MIN_CANVAS, MAX_CANVAS)
           }
-          return markCustomized({ ...p, params: { ...p.params, canvasW: w, canvasH: h } }, 'size')
+          return markCustomized({ ...p, params: withReclampedBg({ ...p.params, canvasW: w, canvasH: h }) }, 'size')
         })
       },
 
@@ -787,8 +807,19 @@ export const useSplitterStore = create<SplitterState>()((set, get) => {
         })
       },
 
-      setPreviewBg(bg: PreviewBg, color?: string) {
-        withCurrentPiece((p) => ({ ...p, previewBg: bg, previewBgColor: color ?? p.previewBgColor }))
+      setBackground(patch) {
+        withCurrentPiece((p) =>
+          markCustomized(
+            {
+              ...p,
+              params: {
+                ...p.params,
+                background: mergeBackgroundPatch(p.params.background, patch, p.params.canvasW, p.params.canvasH),
+              },
+            },
+            'background',
+          ),
+        )
       },
 
       setExportFormat(format) {
