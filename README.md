@@ -20,7 +20,7 @@ npm install
 npm run dev        # 开发服务器
 npm run lint       # oxlint
 npm run typecheck  # tsc -b
-npm test           # vitest（121+ 测试）
+npm test -- run    # vitest（173 测试；不带 -- run 为 watch 模式）
 npm run build      # 生产构建（纯静态，可部署到任何静态托管）
 ```
 

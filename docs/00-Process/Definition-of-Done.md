@@ -1,53 +1,61 @@
 # Definition of Done
 
-任何 work item 在以下条件全部满足时才能视为完成。具体命令按项目实际栈替换（下面以 Node/TS 为例）。
+任何 work item 在以下条件全部满足时才算完成。验收命令只维护在 [`.claude/verify.sh`](../../.claude/verify.sh)，这里不重复写。
 
 ## 通用门槛（所有 work item）
 
-- [ ] lint 通过（如 `npm run lint --max-warnings 0`）
-- [ ] 类型检查通过（如 `npx tsc --noEmit`、`mypy`、`go vet` 等）
-- [ ] 测试全绿（如 `npm test`、`pytest`、`go test ./...`）
-- [ ] 改动有对应的 commit，message 引用 spec/plan 路径
+- [ ] `.claude/verify.sh` 通过（lint / 类型检查 / 测试），**回复中贴出输出最后几行作为证据**——只说"测试通过"不算
+- [ ] 测试数不少于 baseline；如有减少，说明原因
+- [ ] 改动有对应 commit，message 引用 spec/plan 路径（S0 除外）
 - [ ] 没有 `console.log` / `print` / debug 留存
-- [ ] 没有 TODO 或 FIXME 留存（除非创建了对应 issue 并在注释里引用）
+- [ ] 没有 TODO / FIXME 留存（除非对应 issue 已创建并在注释中引用）
 
 ## Feature 级别（一个 spec/plan 完成）
 
-- [ ] 所有 plan 中的 task 已 check
-- [ ] 关键路径 E2E 测试通过（如有 E2E 套件）
-- [ ] 手工 smoke 通过（如适用——触发条件由项目自行约定，见下方示例）
-- [ ] 对应 spec 和 plan 在 `docs/03-Specs/` 和 `docs/04-Plans/` 入档
-- [ ] 如有架构决定，对应 ADR 在 `docs/02-Architecture/Decisions/` 入档（如有该目录）
+- [ ] plan 中所有 task 已勾选，Progress 段已更新到最终状态
+- [ ] 关键路径 E2E 通过（如有 E2E 套件）
+- [ ] UI 改动有截图 / 录屏证据（获取方式见 CLAUDE.md「项目特定」段），并对照 spec 的验收标准
+- [ ] spec / plan 已入档；架构决定有 ADR（如有 `docs/02-Architecture/Decisions/`）
 - [ ] CLAUDE.md / 架构文档反映新增模块（如有）
-- [ ] Barrel / 公共导出审计：`index.ts` 只暴露有外部 consumer 的 symbol（如项目用 barrel 模式）
+- [ ] 5 行变更说明：改了什么、为什么、用户需要亲自看哪几处 diff
+- [ ] 本次出现的返工 / 纠正已记入 `docs/05-Reviews/lessons.md`
+
+## 产品内 LLM 功能（改了 prompt、工具定义、模型或 RAG 配置时）
+
+Prompt 改动无法用单元测试证明正确，需要额外满足：
+
+- [ ] 在评估集上跑过（放在 `evals/` 或 `docs/06-Testing/`；起步 10-20 条真实用例即可）
+- [ ] 报告改动前后的通过率；样本少时多跑几次，避免把随机波动当成提升
+- [ ] 原本通过的用例没有被改坏
+- [ ] 评估时固定完整模型 ID，便于前后对比
 
 ## 手工 Smoke 触发规则（示例，按项目调整）
 
-不需要每个 commit 跑，但以下情况 **必须在 merge 前跑一次**：
+以下情况 merge 前必须跑一次；能自动化（截图 / E2E）的优先自动化：
 
 | 触发条件 | 原因 |
 |---|---|
-| 改了路由 / 入口文件 | 导航/启动变化只在跑起来时能验证 |
-| 新增 / 删除依赖（修改 `package.json` / `requirements.txt` 等） | 依赖解析可能失败 |
-| 改了构建配置（webpack / vite / tsconfig / build script 等） | 构建结果可能变化 |
-| Phase 级别 merge（含整个 feature 合并 main） | 最终安全网 |
+| 改了路由 / 入口文件 | 导航和启动变化只在运行时暴露 |
+| 新增 / 删除依赖 | 依赖解析可能失败 |
+| 改了构建配置 | 构建结果可能变化 |
+| 数据库迁移 / 权限策略 | 权限错误往往不会被单元测试发现 |
+| Phase 级别 merge | 最终安全网 |
 
-**不触发的情况**：纯内部 lib、`__tests__/`、`docs/` 改动（不影响运行时）。
+不触发：纯内部 lib、测试目录、`docs/` 改动。
 
 ## Bug 修复
 
-- [ ] 先写一个能重现 bug 的失败测试
-- [ ] 修复后该测试转绿
-- [ ] 如有 root cause 不明显，在 `docs/05-Reviews/` 加一段简短笔记（如有该目录）
+- [ ] 先写能重现 bug 的失败测试，修复后转绿
+- [ ] root cause 不明显时，在 `lessons.md` 记一行
 - [ ] 通用门槛全部满足
 
-## Phase 级别（多 spec 组成的阶段完成）
+## Phase 级别（多个 spec 组成的阶段）
 
-- [ ] 对应 Phase 的所有 plan 已 check
+- [ ] 该 Phase 所有 plan 已勾选
 - [ ] 应用在目标环境（本地 / 模拟器 / 真机）能正常启动
-- [ ] 该 Phase 验收门（在 phase proposal / refactor proposal 中定义）全部满足
-- [ ] 该 Phase 的回顾笔记写入 `docs/05-Reviews/YYYY-MM-DD-<phase>-retro.md`
-- [ ] 打 git tag（命名按项目约定，如 `refactor-pN`、`v1.2.0`）
+- [ ] Phase 验收门全部满足
+- [ ] 回顾写入 `docs/05-Reviews/YYYY-MM-DD-<phase>-retro.md`，并整理 `lessons.md`（升级 / 合并 / 删除规则）
+- [ ] 打 git tag
 
 ---
 
