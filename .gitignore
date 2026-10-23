@@ -2,7 +2,7 @@ node_modules/
 dist/
 coverage/
 .DS_Store
-claude-workflow-kit/
+.claude/settings.local.json
 *.local
 # Logs
 logs

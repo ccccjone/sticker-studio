@@ -48,3 +48,7 @@ src/
 - 产品需求：[docs/01-Requirements/](./docs/01-Requirements/)
 - Spec：[docs/03-Specs/](./docs/03-Specs/) · Plan：[docs/04-Plans/](./docs/04-Plans/)
 - 流程规范：[docs/00-Process/](./docs/00-Process/)
+
+## 许可证
+
+[MIT](./LICENSE)
