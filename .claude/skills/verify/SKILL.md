@@ -9,7 +9,7 @@ description: 构建并驱动 Sticker Studio（浏览器端图片处理 SPA）验
 
 ```bash
 npm run build                          # tsc -b + vite build
-npm run preview -- --port 4173 --strictPort   # 后台运行，SPA fallback 已内置
+npm run preview -- --port 4173 --strictPort   # 后台运行，SPA fallback 已内置；地址为 http://localhost:4173/sticker-studio/（base 子路径）
 ```
 
 三件套（CI 门，不属于运行时验证）：`npm run lint` / `npm run typecheck` / `npm test -- run`。
