@@ -3,6 +3,7 @@ dist/
 coverage/
 .DS_Store
 .claude/settings.local.json
+.github/workflows/
 *.local
 # Logs
 logs

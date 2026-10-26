@@ -45,4 +45,7 @@ verify.sh 全绿且测试数 ≥ baseline；本地与线上截图；隐私断言
 
 ## Progress
 
-- 未开始
+- 已完成：Task 1（078244e，+3 测试）、Task 2（9ed6daa）、preview base 修复（75b57bb，smoke 发现 vite preview 下 base 退回 /）
+- Task 4 本地 smoke：11/11 PASS（首页、深链刷新 /split /guide、四工作流导航、单图上传→导出像素断言、外部请求 0）
+- Task 3（deploy job）随 CI 搁置；Pages 已开启（build_type=workflow），站点尚无内容
+- 下一步：用户决定上线方式后再做线上 smoke

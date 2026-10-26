@@ -26,8 +26,8 @@ MVP 之后的候选工作。每项启动前按风险分级走 spec → plan 流�
 
 | # | 项 | 现状 | 要做什么 | 备注 |
 |---|---|---|---|---|
-| A1 | 部署上线 | 无部署配置，`dist/` 只在本地 | SPA 路由回落 `index.html`；GitHub Pages 需设 `base` | 2026-10-22 用户倾向 **GitHub Pages**（`base: '/sticker-studio/'`；SPA 回落用 `404.html`；私有仓库开 Pages 需付费计划，待确认） |
-| A2 | CI | 三件套靠自觉 | GitHub Actions：push / PR 跑 `.claude/verify.sh` 等价命令；部署挂在 CI 通过之后 | |
+| A1 | 部署上线 | 无部署配置，`dist/` 只在本地 | SPA 路由回落 `index.html`；GitHub Pages 需设 `base` | GitHub Pages（仓库已公开）；子路径代码已完成，上线方式待定（无 Actions 时可用 gh-pages 分支） |
+| A2 | CI（**搁置**：workflow 只留本地） | 三件套靠自觉 + 本地 pre-commit | GitHub Actions：push / PR 跑 `.claude/verify.sh` 等价命令；部署挂在 CI 通过之后 | |
 | A3 | SEO / 分享 | `index.html` 只有 title | description、Open Graph / Twitter card、中英分享预览图 | |
 | A4 | 使用统计 | 无 | 隐私友好方案（Plausible / Umami / Cloudflare Web Analytics），只记页面与工作流事件 | **需用户确认**；与隐私断言冲突需在 spec 中处理 |
 
