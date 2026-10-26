@@ -4,6 +4,9 @@ coverage/
 .DS_Store
 .claude/settings.local.json
 .github/workflows/
+.env
+.env.*
+!.env.example
 *.local
 # Logs
 logs
