@@ -9,7 +9,7 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { rasterToCanvas } from '../../canvas/encode'
 import { Icon } from '../../components/Icon'
-import { useBatchStore, type BatchItem, type BatchStatus } from './batchStore'
+import { MAX_BATCH_ITEMS, useBatchStore, type BatchItem, type BatchStatus } from './batchStore'
 import type { RasterImage } from '../../core/raster'
 
 const STATUS_CLASS: Record<BatchStatus, string> = {
@@ -62,7 +62,7 @@ export function ThumbnailList() {
           {t('batch.list.selectAll')}
         </label>
         <span className="text-xs text-zinc-400">
-          {t('batch.list.count', { count: items.length, max: 50 })}
+          {t('batch.list.count', { count: items.length, max: MAX_BATCH_ITEMS })}
         </span>
       </div>
       <ul className="flex max-h-[70vh] flex-col gap-1 overflow-y-auto">

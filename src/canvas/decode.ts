@@ -3,7 +3,11 @@
  * 依赖浏览器 API（createImageBitmap / canvas），不做单测，手测覆盖。
  */
 
-import type { RasterImage } from '../core/raster'
+import { readImageSize } from '../core/imageHeader'
+import { fitWithin } from '../core/fitWithin'
+import { BATCH_LIMITS } from '../core/memoryBudget'
+import type { ImageSource, RasterImage } from '../core/raster'
+import { decodeFileToSize, fileSource } from './imageSource'
 
 export const PROXY_MAX = 1536
 export const MAX_FILE_BYTES = 20 * 1024 * 1024
@@ -76,5 +80,65 @@ export async function decodeFile(file: File): Promise<DecodedImage> {
     }
   } finally {
     bitmap.close()
+  }
+}
+
+const HEADER_BYTES = 512 * 1024
+
+/** 只读文件头取像素尺寸(不解码);读不到返回 null。 */
+export async function peekImageSize(file: File): Promise<{ width: number; height: number } | null> {
+  try {
+    return readImageSize(new Uint8Array(await file.slice(0, HEADER_BYTES).arrayBuffer()))
+  } catch {
+    return null
+  }
+}
+
+export interface BatchDecoded {
+  proxy: RasterImage
+  meta: ImageMeta
+  source: ImageSource
+}
+
+/**
+ * 批量解码:只生成代理图(≤ proxyMax),原图以 fileSource 形式延迟到导出时重解码,
+ * 且原图最长边被限制在 maxDim。meta.width/height 为文件原始尺寸。
+ */
+export async function decodeForBatch(
+  file: File,
+  opts: { maxDim: number; proxyMax: number } = { maxDim: BATCH_LIMITS.maxDim, proxyMax: PROXY_MAX },
+): Promise<BatchDecoded> {
+  let orig = await peekImageSize(file)
+  let proxy: RasterImage
+  if (orig) {
+    const p = fitWithin(orig.width, orig.height, opts.proxyMax)
+    proxy = await decodeFileToSize(file, p.width, p.height)
+    // EXIF 旋转可能使实际方向与文件头相反:以代理图方向为准
+    if (orig.width !== orig.height && proxy.width > proxy.height !== orig.width > orig.height) {
+      orig = { width: orig.height, height: orig.width }
+    }
+  } else {
+    // 读不到文件头:先全尺寸解码取实际尺寸,再缩到代理尺寸
+    const bitmap = await createImageBitmap(file)
+    try {
+      orig = { width: bitmap.width, height: bitmap.height }
+      const p = fitWithin(orig.width, orig.height, opts.proxyMax)
+      proxy = drawToRaster(bitmap, p.width, p.height)
+    } finally {
+      bitmap.close()
+    }
+  }
+  const target = fitWithin(orig.width, orig.height, opts.maxDim)
+  return {
+    proxy,
+    meta: {
+      name: file.name,
+      width: orig.width,
+      height: orig.height,
+      type: file.type,
+      size: file.size,
+      hasAlpha: detectAlpha(proxy),
+    },
+    source: fileSource(file, target.width, target.height),
   }
 }

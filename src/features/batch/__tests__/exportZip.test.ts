@@ -111,6 +111,25 @@ describe('exportBatchZip', () => {
   })
 })
 
+describe('exportBatchZip: source.load failure', () => {
+  test('marks the item whose source.load() rejects as failed; others succeed', async () => {
+    const items = [
+      makeItem({ id: 'a', params: { ...makeItem().params, fileName: 'a-edited' } }),
+      makeItem({
+        id: 'b',
+        source: { width: 16, height: 16, load: () => Promise.reject(new Error('decode boom')) },
+        params: { ...makeItem().params, fileName: 'b-edited' },
+      }),
+      makeItem({ id: 'c', params: { ...makeItem().params, fileName: 'c-edited' } }),
+    ]
+    const { blob } = await exportBatchZip(items, 'all')
+    const zip = await JSZip.loadAsync(blob)
+    const manifest = JSON.parse(await zip.files['manifest.json'].async('string'))
+    expect(manifest.files.map((f: { status: string }) => f.status)).toEqual(['success', 'failed', 'success'])
+    expect(Object.keys(zip.files).sort()).toEqual(['a-edited.png', 'c-edited.png', 'manifest.json'])
+  })
+})
+
 describe('exportSingleItem', () => {
   test('renders, encodes and downloads a single item using its own fileName/format', async () => {
     const item = makeItem({ params: { ...makeItem().params, fileName: 'solo', format: 'jpeg' } })

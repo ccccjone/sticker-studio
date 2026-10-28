@@ -142,7 +142,7 @@
   },
   "batch": {
     "title": "Batch Processing",
-    "tooMany": "You can add up to 50 images at once; the rest were not added.",
+    "tooMany": "You can add up to 4 images at once; the rest were not added.",
     "status": {
       "pending": "Pending",
       "edited": "Edited",

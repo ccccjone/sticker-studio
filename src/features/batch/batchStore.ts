@@ -11,9 +11,11 @@
  */
 
 import { create } from 'zustand'
-import { decodeFile, validateFile, type ImageMeta } from '../../canvas/decode'
+import { decodeForBatch, peekImageSize, validateFile, type BatchDecoded } from '../../canvas/decode'
 import { encodeRaster, downloadBlob } from '../../canvas/encode'
 import { residentSource } from '../../canvas/imageSource'
+import { BATCH_LIMITS } from '../../core/memoryBudget'
+import { createWeightedQueue } from '../../core/weightedQueue'
 import {
   defaultTransform,
   type EditParams,
@@ -27,14 +29,18 @@ import { mergeBackgroundPatch, reclampBackground, type ExportBackground } from '
 import { fit, fitSubject, subjectBBox, type FitMode } from '../../core/layout'
 import { applyBrush, composeAlpha, createMask, type BrushMode, type ChangedPixel } from '../../core/mask'
 import { editedName, sequenceName } from '../../core/naming'
-import type { RasterImage, Rgba } from '../../core/raster'
+import type { Rgba } from '../../core/raster'
 import { sampleCorners } from '../../core/removal'
 import { getRemovalEngine } from '../../core/engine'
 import { computeAutoRemoval } from '../editor/autoRemoval'
 import { projectToRotatedSpace } from '../editor/transformMath'
 import type { CanvasPreset, EditorActions, EditorItem, SubjectRatio } from '../editor/types'
 
-export const MAX_BATCH_ITEMS = 50
+export const MAX_BATCH_ITEMS = BATCH_LIMITS.maxItems
+
+const MAX_DECODE_WEIGHT = BATCH_LIMITS.concurrency * BATCH_LIMITS.maxDim * BATCH_LIMITS.maxDim
+// 模块级队列:跨多次 addFiles 共享,保证全局并发解码 ≤ concurrency
+const decodeQueue = createWeightedQueue({ maxConcurrency: BATCH_LIMITS.concurrency, maxWeight: MAX_DECODE_WEIGHT })
 
 const MIN_CANVAS = 16
 const MAX_CANVAS = 4096
@@ -127,10 +133,10 @@ function patchItem(items: BatchItem[], id: string, updater: (item: BatchItem) =>
   return items.map((it) => (it.id === id ? updater(it) : it))
 }
 
-function buildBatchItem(decoded: { image: RasterImage; proxy: RasterImage; meta: ImageMeta }): BatchItem {
+function buildBatchItem(decoded: BatchDecoded): BatchItem {
   const canvasW = DEFAULT_CANVAS_SIZE
   const canvasH = DEFAULT_CANVAS_SIZE
-  const transform = { ...defaultTransform(), ...fit(decoded.image.width, decoded.image.height, canvasW, canvasH, 'contain') }
+  const transform = { ...defaultTransform(), ...fit(decoded.source.width, decoded.source.height, canvasW, canvasH, 'contain') }
   const params: EditParams = {
     canvasW,
     canvasH,
@@ -142,7 +148,7 @@ function buildBatchItem(decoded: { image: RasterImage; proxy: RasterImage; meta:
   return {
     id: nextId(),
     meta: decoded.meta,
-    source: residentSource(decoded.image),
+    source: decoded.source,
     proxy: decoded.proxy,
     mask: null,
     removalBaseline: null,
@@ -197,7 +203,9 @@ export const useBatchStore = create<BatchState>()((set, get) => {
         const decodedResults = await Promise.all(
           accepted.map(async (file) => {
             try {
-              return { file, decoded: await decodeFile(file) }
+              const size = await peekImageSize(file)
+              const weight = size ? size.width * size.height : MAX_DECODE_WEIGHT
+              return { file, decoded: await decodeQueue.add(weight, () => decodeForBatch(file)).promise }
             } catch {
               return { file, decoded: null }
             }
@@ -356,7 +364,7 @@ export const useBatchStore = create<BatchState>()((set, get) => {
       // ---- EditorActions, applied to whichever item is `currentId` ----
 
       async loadImage(decoded) {
-        const item = buildBatchItem(decoded)
+        const item = buildBatchItem({ proxy: decoded.proxy, meta: decoded.meta, source: residentSource(decoded.image) })
         set((state) => ({ items: [...state.items, item], currentId: item.id, undoStack: [], redoStack: [] }))
         const auto = await computeAutoRemoval(item.proxy, item.removalDraft)
         if (!auto) return

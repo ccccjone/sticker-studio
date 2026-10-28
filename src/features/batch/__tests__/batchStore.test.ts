@@ -3,10 +3,39 @@ import { createRaster, setPixel, type RasterImage } from '../../../core/raster'
 import type { ImageMeta } from '../../../canvas/decode'
 import { runTask } from '../../../workers/pixelTasks'
 
+const sourceLoad = vi.hoisted(() => vi.fn())
+// 可控解码:gate 非 null 时,decodeForBatch 等待对应文件名的 deferred
+const decodeCtl = vi.hoisted(() => ({
+  gates: null as Map<string, () => void> | null,
+  inFlight: 0,
+  maxInFlight: 0,
+  failNames: new Set<string>(),
+  waiters: new Map<string, Promise<void>>(),
+}))
+
 vi.mock('../../../canvas/decode', async () => {
   const actual = await vi.importActual<typeof import('../../../canvas/decode')>('../../../canvas/decode')
   return {
     ...actual,
+    peekImageSize: vi.fn(async () => ({ width: 8, height: 8 })),
+    decodeForBatch: vi.fn(async (file: File) => {
+      decodeCtl.inFlight++
+      decodeCtl.maxInFlight = Math.max(decodeCtl.maxInFlight, decodeCtl.inFlight)
+      try {
+        const wait = decodeCtl.waiters.get(file.name)
+        if (wait) await wait
+        if (decodeCtl.failNames.has(file.name)) throw new Error('decode boom')
+      } finally {
+        decodeCtl.inFlight--
+      }
+      const proxy = createRaster(8, 8, [255, 255, 255, 255])
+      if (!file.name.includes('opaque')) setPixel(proxy, 0, 0, [0, 0, 0, 0])
+      return {
+        proxy,
+        meta: { name: file.name, width: 8, height: 8, type: file.type, size: file.size, hasAlpha: false } satisfies ImageMeta,
+        source: { width: 8, height: 8, load: sourceLoad },
+      }
+    }),
     decodeFile: vi.fn(async (file: File) => {
       const image = createRaster(8, 8, [255, 255, 255, 255])
       // 默认带透明像素（跳过自动预应用，保持既有用例语义）；文件名含 opaque 时全不透明
@@ -72,6 +101,11 @@ function seedItems(n: number) {
 }
 
 beforeEach(() => {
+  sourceLoad.mockReset()
+  decodeCtl.inFlight = 0
+  decodeCtl.maxInFlight = 0
+  decodeCtl.failNames.clear()
+  decodeCtl.waiters.clear()
   useBatchStore.setState({ items: [], currentId: null, undoStack: [], redoStack: [] })
   vi.mocked(runPixelTask).mockImplementation(async (task) => runTask(task))
 })
@@ -88,14 +122,61 @@ describe('batchStore: auto removal on addFiles', () => {
 })
 
 describe('batchStore: addFiles limits', () => {
-  test('rejects files beyond the 50-item cap', async () => {
-    const files = Array.from({ length: 51 }, (_, i) => makeFile(`img-${i}.png`))
+  test('rejects files beyond the 4-item cap', async () => {
+    const files = Array.from({ length: 6 }, (_, i) => makeFile(`img-${i}.png`))
     const { rejected } = await actions().addFiles(files)
     const { items } = useBatchStore.getState()
-    expect(items).toHaveLength(50)
-    expect(rejected).toHaveLength(1)
-    expect(rejected[0].reason).toBe('batch.tooMany')
-    expect(rejected[0].name).toBe('img-50.png')
+    expect(items).toHaveLength(4)
+    expect(rejected).toHaveLength(2)
+    expect(rejected.every((r) => r.reason === 'batch.tooMany')).toBe(true)
+    expect(rejected.map((r) => r.name)).toEqual(['img-4.png', 'img-5.png'])
+  })
+
+  test('with 3 existing items, only 1 more is accepted', async () => {
+    seedItems(3)
+    const { rejected } = await actions().addFiles([makeFile('a.png'), makeFile('b.png'), makeFile('c.png')])
+    expect(useBatchStore.getState().items).toHaveLength(4)
+    expect(rejected.map((r) => r.reason)).toEqual(['batch.tooMany', 'batch.tooMany'])
+  })
+
+  test('new items do not hold original pixels: source.load is not called during addFiles', async () => {
+    await actions().addFiles([makeFile('a.png'), makeFile('b.png')])
+    expect(useBatchStore.getState().items).toHaveLength(2)
+    expect(sourceLoad).not.toHaveBeenCalled()
+  })
+
+  test('at most 3 decodes are in flight at once', async () => {
+    const releases: Array<() => void> = []
+    const names = ['a.png', 'b.png', 'c.png', 'd.png']
+    for (const n of names) decodeCtl.waiters.set(n, new Promise<void>((res) => releases.push(res)))
+    const pending = actions().addFiles(names.map((n) => makeFile(n)))
+    await new Promise((r) => setTimeout(r, 20))
+    expect(decodeCtl.inFlight).toBe(3)
+    releases.forEach((r) => r())
+    await pending
+    expect(decodeCtl.maxInFlight).toBe(3)
+    expect(useBatchStore.getState().items).toHaveLength(4)
+  })
+
+  test('items keep selection order even when decodes finish out of order', async () => {
+    const releases = new Map<string, () => void>()
+    for (const n of ['a.png', 'b.png', 'c.png']) {
+      decodeCtl.waiters.set(n, new Promise<void>((res) => releases.set(n, res)))
+    }
+    const pending = actions().addFiles(['a.png', 'b.png', 'c.png'].map((n) => makeFile(n)))
+    await new Promise((r) => setTimeout(r, 10))
+    releases.get('c.png')!()
+    releases.get('a.png')!()
+    releases.get('b.png')!()
+    await pending
+    expect(useBatchStore.getState().items.map((it) => it.meta.name)).toEqual(['a.png', 'b.png', 'c.png'])
+  })
+
+  test('a decode failure is reported as upload.decodeFailed; the others still load', async () => {
+    decodeCtl.failNames.add('bad.png')
+    const { rejected } = await actions().addFiles([makeFile('a.png'), makeFile('bad.png'), makeFile('c.png')])
+    expect(rejected).toEqual([{ name: 'bad.png', reason: 'upload.decodeFailed' }])
+    expect(useBatchStore.getState().items.map((it) => it.meta.name)).toEqual(['a.png', 'c.png'])
   })
 
   test('rejects a single file over 20MB with the shared upload.tooLarge reason', async () => {
