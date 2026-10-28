@@ -399,7 +399,7 @@ export const useBatchStore = create<BatchState>()((set, get) => {
       },
 
       clear() {
-        set({ items: [], currentId: null, undoStack: [], redoStack: [] })
+        set({ items: [], currentId: null, undoStack: [], redoStack: [], lastRejected: [] })
       },
 
       setRemovalDraft(patch) {

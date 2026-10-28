@@ -243,6 +243,13 @@ describe('batchStore: select / toggle / removeItem / clear', () => {
     expect(state.undoStack).toHaveLength(0)
     expect(state.redoStack).toHaveLength(0)
   })
+
+  test('clear also drops the last rejection notice', () => {
+    seedItems(1)
+    useBatchStore.setState({ lastRejected: [{ name: 'x.png', reason: 'batch.tooMany' }] })
+    actions().clear()
+    expect(useBatchStore.getState().lastRejected).toEqual([])
+  })
 })
 
 describe('batchStore: applyTo scopes', () => {

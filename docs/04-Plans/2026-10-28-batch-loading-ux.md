@@ -22,6 +22,7 @@
 - [ ] Task 1: store 槽位与阶段（T3）
   - 先红：`uploads` 按选择顺序；阶段 queued → decoding → removing → 完成后移出 uploads 并按 seq 插入 items；`cancelUpload(id)` 只对 queued 生效且该文件永不解码；失败移除并进 rejected；第一张就绪成为 current
   - 条目新增 `seq`；`status` 增加 `removing`（去背景中）或在条目上加 `loading` 标志，取最小改动
+  - 同时解决 B1 遗留：多次 addFiles 并发时按选择顺序占位（槽位在选择时即计数），拒收提示合并而非覆盖
   - `decodeThumbnail(file, size)`：≤ 96 px dataURL，失败返回 null
   - commit：`feat(batch): ordered upload slots with stages and cancel`
 - [ ] Task 2: UI（T2）
