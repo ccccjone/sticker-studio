@@ -41,6 +41,7 @@ MVP 之后的候选工作。每项启动前按风险分级走 spec → plan 流�
 | B4 | 重复的蒙版 / 撤销逻辑 | 三个 store 的笔刷 undo/redo 实现相似 | `refactor-flow` 抽公共 mask-history 模块，测试先锁定现有行为 |
 | B5 | 错误边界 | 无 ErrorBoundary，异常整页白屏 | 路由级 ErrorBoundary + 中英文案 +「重置当前项目」 |
 | B7 | 加载体验 | 上传后到全部解码完成前无逐张反馈 | 立即出现占位格 + 阶段状态（排队 / 解码 / 去背景 / 完成）、低清缩略图先行、逐张就位；样式在决策台选定 |
+| B8 | 异步错误提示 | 事件处理器 / Promise 中的错误不被错误边界捕获，失败时无提示（B5 D4 决定拆出，2026-10-28） | 梳理各操作的失败路径；必要时加全局 `error` / `unhandledrejection` 提示条（需过滤扩展噪音） |
 | B6 | 资源释放 | `createObjectURL` 靠 10s `setTimeout` 回收 | 审计 Canvas / Blob / ImageBitmap 生命周期，切换图片 / 离开页面时显式释放（PRD §12.2） |
 
 ## C. 产品优化
