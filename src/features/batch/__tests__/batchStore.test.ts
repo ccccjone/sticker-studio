@@ -221,7 +221,7 @@ describe('batchStore: applyTo scopes', () => {
       expect(it.params.canvasW).toBe(128)
       expect(it.params.canvasH).toBe(128)
       expect(it.fitMode).toBe('cover')
-      expect(it.params.transform.scale).toBeCloseTo(128 / it.image.width)
+      expect(it.params.transform.scale).toBeCloseTo(128 / it.source.width)
     }
   })
 

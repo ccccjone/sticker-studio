@@ -48,8 +48,9 @@ export async function exportBatchZip(items: BatchItem[], scope: 'all' | 'selecte
     const ext = item.params.format === 'jpeg' ? 'jpg' : 'png'
     const exportName = uniqueExportName(item.params.fileName, ext, used)
     try {
-      const mask = await computeExportMask(item)
-      const out = renderExport(item.image, mask, item.params)
+      const image = await item.source.load()
+      const mask = await computeExportMask(item, image)
+      const out = renderExport(image, mask, item.params)
       const blob = await encodeRaster(out, item.params.format, item.params.jpegBg)
       zip.file(exportName, blob)
       files.push({ originalName: item.meta.name, exportName, status: 'success' })
@@ -74,8 +75,9 @@ export async function downloadBatchZip(items: BatchItem[], scope: 'all' | 'selec
 
 /** Single-item export/download, reused by the batch page's per-item Export panel. */
 export async function exportSingleItem(item: BatchItem): Promise<void> {
-  const mask = await computeExportMask(item)
-  const out = renderExport(item.image, mask, item.params)
+  const image = await item.source.load()
+  const mask = await computeExportMask(item, image)
+  const out = renderExport(image, mask, item.params)
   const blob = await encodeRaster(out, item.params.format, item.params.jpegBg)
   const ext = item.params.format === 'jpeg' ? 'jpg' : 'png'
   downloadBlob(blob, `${item.params.fileName}.${ext}`)

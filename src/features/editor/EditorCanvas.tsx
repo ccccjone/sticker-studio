@@ -78,7 +78,7 @@ export function EditorCanvas() {
   const pw = item.proxy.width
   const ph = item.proxy.height
   // transform.scale 是"原图 → 画布"的缩放；预览绘制的是 proxy，需补偿两者的分辨率差
-  const proxyComp = item.image.width / pw
+  const proxyComp = item.source.width / pw
   const view = fitView(canvasW, canvasH, stageW, stageH, 16)
   const boundsX = view.viewX
   const boundsY = view.viewY

@@ -17,6 +17,7 @@
  */
 
 import { create } from 'zustand'
+import { residentSource } from '../../canvas/imageSource'
 import type { ImageMeta } from '../../canvas/decode'
 import { defaultTransform, type EditParams, type OutlineParams, type RemovalParams, type Rotation } from '../../canvas/renderExport'
 import { createBoxId, splitGrid, type CropBox } from '../../core/grid'
@@ -257,7 +258,7 @@ function buildPiece(
       size: 0,
       hasAlpha: sheet.meta.hasAlpha,
     },
-    image,
+    source: residentSource(image),
     proxy,
     mask: null,
     removalBaseline: null,
@@ -521,7 +522,7 @@ export const useSplitterStore = create<SplitterState>()((set, get) => {
               refit = true
             }
             if (refit) {
-              const f = fit(next.image.width, next.image.height, canvasW, canvasH, fitMode)
+              const f = fit(next.source.width, next.source.height, canvasW, canvasH, fitMode)
               next = {
                 ...next,
                 fitMode,
@@ -741,7 +742,7 @@ export const useSplitterStore = create<SplitterState>()((set, get) => {
 
       setFitMode(mode) {
         withCurrentPiece((p) => {
-          const f = fit(p.image.width, p.image.height, p.params.canvasW, p.params.canvasH, mode)
+          const f = fit(p.source.width, p.source.height, p.params.canvasW, p.params.canvasH, mode)
           return markCustomized(
             { ...p, fitMode: mode, params: { ...p.params, transform: { scale: f.scale, dx: f.dx, dy: f.dy, rotation: 0, flipX: false, flipY: false } } },
             'fitMode',
@@ -777,7 +778,7 @@ export const useSplitterStore = create<SplitterState>()((set, get) => {
       center() {
         withCurrentPiece((p) => {
           const { transform, canvasW, canvasH } = p.params
-          const proj = projectToRotatedSpace(p.image.width / 2, p.image.height / 2, p.image.width, p.image.height, transform.rotation, transform.flipX, transform.flipY)
+          const proj = projectToRotatedSpace(p.source.width / 2, p.source.height / 2, p.source.width, p.source.height, transform.rotation, transform.flipX, transform.flipY)
           const dx = canvasW / 2 - proj.x * transform.scale
           const dy = canvasH / 2 - proj.y * transform.scale
           return { ...p, params: { ...p.params, transform: { ...transform, dx, dy } } }
@@ -853,15 +854,15 @@ function applySubjectRatio(piece: SplitterPiece, ratio: SubjectRatio): SplitterP
   const working = piece.mask ? composeAlpha(piece.proxy, piece.mask) : piece.proxy
   const bboxProxy = subjectBBox(working)
   if (!bboxProxy) return piece
-  const sx = piece.image.width / piece.proxy.width
-  const sy = piece.image.height / piece.proxy.height
+  const sx = piece.source.width / piece.proxy.width
+  const sy = piece.source.height / piece.proxy.height
   const bboxFull = { x: bboxProxy.x * sx, y: bboxProxy.y * sy, w: bboxProxy.w * sx, h: bboxProxy.h * sy }
   const { transform, canvasW, canvasH } = piece.params
   const [rbw, rbh] = transform.rotation === 90 || transform.rotation === 270 ? [bboxFull.h, bboxFull.w] : [bboxFull.w, bboxFull.h]
   const f = fitSubject({ x: 0, y: 0, w: rbw, h: rbh }, canvasW, canvasH, ratio / 100)
   const bcx = bboxFull.x + bboxFull.w / 2
   const bcy = bboxFull.y + bboxFull.h / 2
-  const proj = projectToRotatedSpace(bcx, bcy, piece.image.width, piece.image.height, transform.rotation, transform.flipX, transform.flipY)
+  const proj = projectToRotatedSpace(bcx, bcy, piece.source.width, piece.source.height, transform.rotation, transform.flipX, transform.flipY)
   const dx = canvasW / 2 - proj.x * f.scale
   const dy = canvasH / 2 - proj.y * f.scale
   return { ...piece, params: { ...piece.params, transform: { ...transform, scale: f.scale, dx, dy } } }

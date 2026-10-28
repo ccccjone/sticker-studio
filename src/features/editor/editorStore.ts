@@ -4,6 +4,7 @@
  */
 
 import { create } from 'zustand'
+import { residentSource } from '../../canvas/imageSource'
 import type { ImageMeta } from '../../canvas/decode'
 import {
   defaultTransform,
@@ -86,7 +87,7 @@ function buildItem(decoded: { image: RasterImage; proxy: RasterImage; meta: Imag
   return {
     id: nextId(),
     meta: decoded.meta,
-    image: decoded.image,
+    source: residentSource(decoded.image),
     proxy: decoded.proxy,
     mask: null,
     removalBaseline: null,
@@ -295,7 +296,7 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
     setFitMode(mode) {
       const { item } = get()
       if (!item) return
-      const f = fit(item.image.width, item.image.height, item.params.canvasW, item.params.canvasH, mode)
+      const f = fit(item.source.width, item.source.height, item.params.canvasW, item.params.canvasH, mode)
       set({
         item: {
           ...item,
@@ -350,10 +351,10 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
       if (!item) return
       const { transform, canvasW, canvasH } = item.params
       const proj = projectToRotatedSpace(
-        item.image.width / 2,
-        item.image.height / 2,
-        item.image.width,
-        item.image.height,
+        item.source.width / 2,
+        item.source.height / 2,
+        item.source.width,
+        item.source.height,
         transform.rotation,
         transform.flipX,
         transform.flipY,
@@ -369,8 +370,8 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
       const working = item.mask ? composeAlpha(item.proxy, item.mask) : item.proxy
       const bboxProxy = subjectBBox(working)
       if (!bboxProxy) return
-      const sx = item.image.width / item.proxy.width
-      const sy = item.image.height / item.proxy.height
+      const sx = item.source.width / item.proxy.width
+      const sy = item.source.height / item.proxy.height
       const bboxFull = { x: bboxProxy.x * sx, y: bboxProxy.y * sy, w: bboxProxy.w * sx, h: bboxProxy.h * sy }
       const { transform, canvasW, canvasH } = item.params
       const [rbw, rbh] =
@@ -381,8 +382,8 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
       const proj = projectToRotatedSpace(
         bcx,
         bcy,
-        item.image.width,
-        item.image.height,
+        item.source.width,
+        item.source.height,
         transform.rotation,
         transform.flipX,
         transform.flipY,
@@ -442,8 +443,9 @@ export const useEditorStore = create<EditorState>()((set, get) => ({
     async exportImage() {
       const { item } = get()
       if (!item) return
-      const mask = await computeExportMask(item)
-      const out = renderExport(item.image, mask, item.params)
+      const image = await item.source.load()
+      const mask = await computeExportMask(item, image)
+      const out = renderExport(image, mask, item.params)
       const blob = await encodeRaster(out, item.params.format, item.params.jpegBg)
       const ext = item.params.format === 'jpeg' ? 'jpg' : 'png'
       downloadBlob(blob, `${item.params.fileName}.${ext}`)

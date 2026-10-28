@@ -49,8 +49,9 @@ export async function exportSplitZip(pieces: SplitterPiece[]): Promise<SplitZipR
     const ext = piece.params.format === 'jpeg' ? 'jpg' : 'png'
     const exportName = uniqueExportName(piece.params.fileName, ext, used)
     try {
-      const mask = await computeExportMask(piece)
-      const out = renderExport(piece.image, mask, piece.params)
+      const image = await piece.source.load()
+      const mask = await computeExportMask(piece, image)
+      const out = renderExport(image, mask, piece.params)
       const blob = await encodeRaster(out, piece.params.format, piece.params.jpegBg)
       zip.file(exportName, blob)
       files.push({ originalName: piece.meta.name, exportName, status: 'success' })
@@ -75,8 +76,9 @@ export async function downloadSplitZip(pieces: SplitterPiece[]): Promise<void> {
 
 /** Single-piece export/download, reused by the per-piece editor's Export panel. */
 export async function exportSinglePiece(piece: SplitterPiece): Promise<void> {
-  const mask = await computeExportMask(piece)
-  const out = renderExport(piece.image, mask, piece.params)
+  const image = await piece.source.load()
+  const mask = await computeExportMask(piece, image)
+  const out = renderExport(image, mask, piece.params)
   const blob = await encodeRaster(out, piece.params.format, piece.params.jpegBg)
   const ext = piece.params.format === 'jpeg' ? 'jpg' : 'png'
   downloadBlob(blob, `${piece.params.fileName}.${ext}`)

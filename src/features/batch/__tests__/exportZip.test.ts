@@ -1,6 +1,7 @@
 import JSZip from 'jszip'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { createRaster } from '../../../core/raster'
+import { residentSource } from '../../../canvas/imageSource'
 import type { BatchItem } from '../batchStore'
 
 const renderExportMock = vi.fn()
@@ -24,7 +25,7 @@ function makeItem(overrides: Partial<BatchItem> = {}): BatchItem {
   return {
     id: overrides.id ?? `item-${Math.random()}`,
     meta: { name: 'cat.png', width: 16, height: 16, type: 'image/png', size: 100, hasAlpha: false },
-    image,
+    source: residentSource(image),
     proxy: image,
     mask: null,
     removalBaseline: null,
@@ -114,8 +115,8 @@ describe('exportSingleItem', () => {
   test('renders, encodes and downloads a single item using its own fileName/format', async () => {
     const item = makeItem({ params: { ...makeItem().params, fileName: 'solo', format: 'jpeg' } })
     await exportSingleItem(item)
-    expect(renderExportMock).toHaveBeenCalledWith(item.image, null, item.params)
-    expect(encodeRasterMock).toHaveBeenCalledWith(item.image, 'jpeg', '#ffffff')
+    expect(renderExportMock).toHaveBeenCalledWith(await item.source.load(), null, item.params)
+    expect(encodeRasterMock).toHaveBeenCalledWith(await item.source.load(), 'jpeg', '#ffffff')
     expect(downloadBlobMock).toHaveBeenCalledWith(expect.any(Blob), 'solo.jpg')
   })
 })

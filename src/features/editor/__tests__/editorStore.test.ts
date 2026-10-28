@@ -239,7 +239,7 @@ describe('editorStore: fit mode', () => {
     expect(item?.params.transform.rotation).toBe(0)
     expect(item?.params.transform.flipX).toBe(false)
     // cover on a square image into a square canvas => scale matches canvas/image ratio
-    expect(item?.params.transform.scale).toBeCloseTo(item!.params.canvasW / item!.image.width)
+    expect(item?.params.transform.scale).toBeCloseTo(item!.params.canvasW / item!.source.width)
   })
 })
 

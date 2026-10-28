@@ -8,7 +8,7 @@ import type { ImageMeta } from '../../canvas/decode'
 import type { EditParams, OutlineParams } from '../../canvas/renderExport'
 import type { ExportBackground } from '../../core/background'
 import type { BrushMode } from '../../core/mask'
-import type { RasterImage } from '../../core/raster'
+import type { ImageSource, RasterImage } from '../../core/raster'
 import type { FitMode } from '../../core/layout'
 
 export type CanvasPreset = 256 | 512 | 1024 | 2048
@@ -24,8 +24,8 @@ export interface RemovalDraft {
 export interface EditorItem {
   id: string
   meta: ImageMeta
-  /** 原始分辨率图像，导出时使用，不做实时像素编辑。 */
-  image: RasterImage
+  /** 原图来源：宽高常驻，原分辨率像素导出时经 load() 按需获取，不做实时像素编辑。 */
+  source: ImageSource
   /** 预览代理图（最长边 ≤1536），画布展示与蒙版编辑都在这个分辨率上做。 */
   proxy: RasterImage
   /** 工作蒙版（代理分辨率），null 表示尚未去背景/涂抹，视为全不透明。 */

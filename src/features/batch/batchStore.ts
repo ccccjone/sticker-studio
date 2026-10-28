@@ -13,6 +13,7 @@
 import { create } from 'zustand'
 import { decodeFile, validateFile, type ImageMeta } from '../../canvas/decode'
 import { encodeRaster, downloadBlob } from '../../canvas/encode'
+import { residentSource } from '../../canvas/imageSource'
 import {
   defaultTransform,
   type EditParams,
@@ -141,7 +142,7 @@ function buildBatchItem(decoded: { image: RasterImage; proxy: RasterImage; meta:
   return {
     id: nextId(),
     meta: decoded.meta,
-    image: decoded.image,
+    source: residentSource(decoded.image),
     proxy: decoded.proxy,
     mask: null,
     removalBaseline: null,
@@ -280,7 +281,7 @@ export const useBatchStore = create<BatchState>()((set, get) => {
                 const canvasW = settings.canvasW ?? next.params.canvasW
                 const canvasH = settings.canvasH ?? next.params.canvasH
                 const fitMode = settings.fitMode ?? next.fitMode
-                const f = fit(next.image.width, next.image.height, canvasW, canvasH, fitMode)
+                const f = fit(next.source.width, next.source.height, canvasW, canvasH, fitMode)
                 next = {
                   ...next,
                   fitMode,
@@ -549,7 +550,7 @@ export const useBatchStore = create<BatchState>()((set, get) => {
 
       setFitMode(mode) {
         withCurrent((it) => {
-          const f = fit(it.image.width, it.image.height, it.params.canvasW, it.params.canvasH, mode)
+          const f = fit(it.source.width, it.source.height, it.params.canvasW, it.params.canvasH, mode)
           return {
             ...it,
             fitMode: mode,
@@ -587,10 +588,10 @@ export const useBatchStore = create<BatchState>()((set, get) => {
         withCurrent((it) => {
           const { transform, canvasW, canvasH } = it.params
           const proj = projectToRotatedSpace(
-            it.image.width / 2,
-            it.image.height / 2,
-            it.image.width,
-            it.image.height,
+            it.source.width / 2,
+            it.source.height / 2,
+            it.source.width,
+            it.source.height,
             transform.rotation,
             transform.flipX,
             transform.flipY,
@@ -606,8 +607,8 @@ export const useBatchStore = create<BatchState>()((set, get) => {
           const working = it.mask ? composeAlpha(it.proxy, it.mask) : it.proxy
           const bboxProxy = subjectBBox(working)
           if (!bboxProxy) return it
-          const sx = it.image.width / it.proxy.width
-          const sy = it.image.height / it.proxy.height
+          const sx = it.source.width / it.proxy.width
+          const sy = it.source.height / it.proxy.height
           const bboxFull = { x: bboxProxy.x * sx, y: bboxProxy.y * sy, w: bboxProxy.w * sx, h: bboxProxy.h * sy }
           const { transform, canvasW, canvasH } = it.params
           const [rbw, rbh] =
@@ -618,8 +619,8 @@ export const useBatchStore = create<BatchState>()((set, get) => {
           const proj = projectToRotatedSpace(
             bcx,
             bcy,
-            it.image.width,
-            it.image.height,
+            it.source.width,
+            it.source.height,
             transform.rotation,
             transform.flipX,
             transform.flipY,
@@ -675,8 +676,9 @@ export const useBatchStore = create<BatchState>()((set, get) => {
         const { items, currentId } = get()
         const it = items.find((i) => i.id === currentId)
         if (!it) return
-        const mask = await computeExportMask(it)
-        const out = renderExport(it.image, mask, it.params)
+        const image = await it.source.load()
+        const mask = await computeExportMask(it, image)
+        const out = renderExport(image, mask, it.params)
         const blob = await encodeRaster(out, it.params.format, it.params.jpegBg)
         const ext = it.params.format === 'jpeg' ? 'jpg' : 'png'
         downloadBlob(blob, `${it.params.fileName}.${ext}`)

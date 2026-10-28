@@ -218,23 +218,24 @@ describe('splitterStore: manual boxes', () => {
 })
 
 describe('splitterStore: splitIntoPieces', () => {
-  test('crops the right number of pieces at the right coordinates', () => {
+  test('crops the right number of pieces at the right coordinates', async () => {
     actions().loadImage(makeSheet()) // default 2x2 grid, no margin/gap -> four 20x20 quadrants
     actions().splitIntoPieces()
     const { pieces, step } = useSplitterStore.getState()
     expect(step).toBe('edit')
     expect(pieces).toHaveLength(4)
     for (const p of pieces) {
-      expect(p.image.width).toBe(20)
-      expect(p.image.height).toBe(20)
+      expect(p.source.width).toBe(20)
+      expect(p.source.height).toBe(20)
     }
     // top-left piece should be solid red (quadrant color), sampled at its center
     const topLeft = pieces[0]
     const i = (10 * 20 + 10) * 4
-    expect([topLeft.image.data[i], topLeft.image.data[i + 1], topLeft.image.data[i + 2]]).toEqual([255, 0, 0])
+    const tlImg = await topLeft.source.load()
+    const brImg = await pieces[3].source.load()
+    expect([tlImg.data[i], tlImg.data[i + 1], tlImg.data[i + 2]]).toEqual([255, 0, 0])
     // bottom-right piece (row 2, col 2) should be yellow
-    const bottomRight = pieces[3]
-    expect([bottomRight.image.data[i], bottomRight.image.data[i + 1], bottomRight.image.data[i + 2]]).toEqual([255, 255, 0])
+    expect([brImg.data[i], brImg.data[i + 1], brImg.data[i + 2]]).toEqual([255, 255, 0])
   })
 
   test('pieces of an opaque sheet get removal pre-applied after split', async () => {

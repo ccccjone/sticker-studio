@@ -62,3 +62,11 @@ export function cropRaster(
   }
   return out
 }
+
+/** 图像来源：宽高常驻，原分辨率像素按需加载。 */
+export interface ImageSource {
+  readonly width: number
+  readonly height: number
+  /** 返回原分辨率像素。常驻来源直接返回；文件来源每次重新解码，不缓存。 */
+  load(): Promise<RasterImage>
+}
