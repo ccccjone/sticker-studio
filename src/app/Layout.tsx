@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Link, NavLink, Outlet } from 'react-router'
 import { Icon } from '../components/Icon'
+import { DevCrash } from './DevCrash'
 import { RouteErrorBoundary } from './ErrorBoundary'
 
 const LANGS = [
@@ -19,6 +20,7 @@ export function Layout() {
   const { t, i18n } = useTranslation()
   return (
     <div className="flex min-h-screen flex-col bg-zinc-50 text-zinc-800">
+      {import.meta.env.DEV && <DevCrash at="layout" />}
       <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4 sm:gap-6">
           <Link to="/" className="flex shrink-0 items-center gap-2.5">
@@ -76,6 +78,7 @@ export function Layout() {
       </header>
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">
         <RouteErrorBoundary>
+          {import.meta.env.DEV && <DevCrash at="route" />}
           <Outlet />
         </RouteErrorBoundary>
       </main>
