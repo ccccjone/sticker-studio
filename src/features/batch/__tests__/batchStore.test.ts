@@ -66,7 +66,7 @@ vi.mock('../../../workers/runPixelTask', () => ({
 
 const { useBatchStore } = await import('../batchStore')
 const { runPixelTask } = await import('../../../workers/runPixelTask')
-const { peekImageSize, decodeForBatch } = await import('../../../canvas/decode')
+const { peekImageSize, decodeForBatch, decodeThumbnail } = await import('../../../canvas/decode')
 // 引擎实现依赖 runPixelTask，同样要在 mock 之后注册
 const { registerDefaultEngines } = await import('../../../engines')
 registerDefaultEngines()
@@ -580,5 +580,65 @@ describe('batchStore: upload slots', () => {
     expect(useBatchStore.getState().uploads).toEqual([])
     expect(useBatchStore.getState().lastRejected).toEqual([])
     expect(vi.mocked(decodeForBatch).mock.calls.some((c) => (c[0] as File).name === 'd.png')).toBe(false)
+  })
+
+  test('a decode that rejects with AbortError is still a failure, not a stuck slot', async () => {
+    vi.mocked(decodeForBatch).mockImplementationOnce(async () => {
+      // 浏览器的 DOMException 是 Error 实例;jsdom 的不是,所以用同名 Error 模拟
+      throw Object.assign(new Error('aborted'), { name: 'AbortError' })
+    })
+    const { rejected } = await actions().addFiles([makeFile('a.png')])
+    expect(rejected).toEqual([{ name: 'a.png', reason: 'upload.decodeFailed' }])
+    expect(useBatchStore.getState().uploads).toEqual([])
+  })
+
+  test('the header size read by addFiles is passed to decodeThumbnail', async () => {
+    vi.mocked(decodeThumbnail).mockClear()
+    await actions().addFiles([makeFile('a.png')])
+    expect(vi.mocked(decodeThumbnail).mock.calls[0][2]).toEqual({ width: 8, height: 8 })
+  })
+
+  test('a failed thumbnail does not block the real decode', async () => {
+    vi.mocked(decodeThumbnail).mockImplementationOnce(async () => {
+      throw new Error('thumb boom')
+    })
+    const { rejected } = await actions().addFiles([makeFile('a.png')])
+    expect(rejected).toEqual([])
+    expect(useBatchStore.getState().items.map((i) => i.meta.name)).toEqual(['a.png'])
+  })
+
+  test('a slot cancelled before its header is read is never decoded', async () => {
+    vi.mocked(decodeThumbnail).mockClear()
+    const p = actions().addFiles([makeFile('a.png'), makeFile('b.png')])
+    actions().cancelUpload(useBatchStore.getState().uploads[1].id)
+    const { rejected } = await p
+    expect(rejected).toEqual([])
+    expect(vi.mocked(decodeThumbnail).mock.calls.some((c) => (c[0] as File).name === 'b.png')).toBe(false)
+    expect(vi.mocked(decodeForBatch).mock.calls.some((c) => (c[0] as File).name === 'b.png')).toBe(false)
+    expect(useBatchStore.getState().items.map((i) => i.meta.name)).toEqual(['a.png'])
+  })
+
+  test('auto removal queued behind another is skipped once its item is cleared', async () => {
+    // 先量一张图自动去背景要几次 pixel task
+    vi.mocked(runPixelTask).mockClear()
+    await actions().addFiles([makeFile('opaque-x.png')])
+    const perItem = vi.mocked(runPixelTask).mock.calls.length
+    expect(perItem).toBeGreaterThan(0)
+    actions().clear()
+
+    let release!: () => void
+    const g = new Promise<void>((res) => (release = res))
+    vi.mocked(runPixelTask).mockClear()
+    vi.mocked(runPixelTask).mockImplementation(async (task) => {
+      await g
+      return runTask(task)
+    })
+    const p = actions().addFiles([makeFile('opaque-a.png'), makeFile('opaque-b.png')])
+    await tick()
+    expect(useBatchStore.getState().items).toHaveLength(2)
+    actions().clear()
+    release()
+    await p
+    expect(vi.mocked(runPixelTask).mock.calls.length).toBe(perItem)
   })
 })

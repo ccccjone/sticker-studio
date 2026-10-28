@@ -19,7 +19,7 @@
 
 ## Tasks
 
-- [ ] Task 1: store 槽位与阶段（T3）
+- [x] Task 1: store 槽位与阶段（T3）
   - 先红：`uploads` 按选择顺序；阶段 queued → decoding → removing → 完成后移出 uploads 并按 seq 插入 items；`cancelUpload(id)` 只对 queued 生效且该文件永不解码；失败移除并进 rejected；第一张就绪成为 current
   - 条目新增 `seq`；`status` 增加 `removing`（去背景中）或在条目上加 `loading` 标志，取最小改动
   - 同时解决 B1 遗留：多次 addFiles 并发时按选择顺序占位（槽位在选择时即计数），拒收提示合并而非覆盖
@@ -42,5 +42,6 @@ verify.sh 全绿；中间态与完成态截图；隐私断言 0。
 ## Progress
 
 - baseline：verify 31/227（9110e71）
-- 当前：Task 1（已派 implementer）
+- Task 1：2065378 + 审查修复（缩略图改 PNG 保留透明、去掉 isAbort 分支、clear 后跳过排队中的去背景、缩略图复用头尺寸），verify 31/240
+- 当前：Task 2
 - 偏离：低清缩略图解码也走 B1 的加权队列（排在正式解码之前），否则 4 张同时解码会突破 512 MiB 预算；代价是每张多解码一次

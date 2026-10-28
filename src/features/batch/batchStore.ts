@@ -53,10 +53,6 @@ function nextSeq(): number {
   return ++seqCounter
 }
 
-function isAbort(e: unknown): boolean {
-  return e instanceof Error && e.name === 'AbortError'
-}
-
 const MIN_CANVAS = 16
 const MAX_CANVAS = 4096
 const MIN_SCALE = 0.1
@@ -275,7 +271,7 @@ export const useBatchStore = create<BatchState>()((set, get) => {
         })
         const weightOf = (size: { width: number; height: number } | null) => (size ? size.width * size.height : MAX_DECODE_WEIGHT)
         for (const p of live) {
-          const h = decodeQueue.add(weightOf(p.size), () => decodeThumbnail(p.file, THUMB_SIZE))
+          const h = decodeQueue.add(weightOf(p.size), () => decodeThumbnail(p.file, THUMB_SIZE, p.size))
           slotCancels.set(p.slot.id, [h.cancel])
           h.promise
             .then((thumb) => {
@@ -293,8 +289,8 @@ export const useBatchStore = create<BatchState>()((set, get) => {
             let decoded: BatchDecoded
             try {
               decoded = await h.promise
-            } catch (e) {
-              if (isAbort(e)) return
+            } catch {
+              // 被 cancelUpload / clear 中止的槽位已移除,fail 对其是 no-op
               fail(p.slot)
               return
             }
@@ -312,6 +308,8 @@ export const useBatchStore = create<BatchState>()((set, get) => {
             })
             // 自动预应用去背景（spec 2026-07-12 §F1）：模块级串行链；已透明/失败的条目跳过
             const run = removalChain.then(async () => {
+              // 排队期间条目已被 clear / removeItem:不再白算
+              if (!get().items.some((it) => it.id === item.id)) return
               try {
                 const auto = await computeAutoRemoval(item.proxy, item.removalDraft)
                 set((state) => ({
