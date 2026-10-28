@@ -16,8 +16,8 @@ MVP 之后的候选工作。每项启动前按风险分级走 spec → plan 流�
 
 ## 建议顺序（待确认）
 
-1. A1 部署 + A2 CI
-2. B1 内存修复 + B5 错误边界
+1. B1 内存修复 + B7 加载体验 + B5 错误边界（2026-10-28 用户：先 refine，再上线）
+2. C10 AI 创作（S2，确认后）；上线改为 Vercel（ADR 0002）
 3. B3 代码分割（为 C1 铺路）
 4. C1 本地 AI 去背景 → C3 defringe → C2 自动拆分
 5. 其余条目逐项确认后推进
@@ -35,11 +35,12 @@ MVP 之后的候选工作。每项启动前按风险分级走 spec → plan 流�
 
 | # | 项 | 现状 | 要做什么 |
 |---|---|---|---|
-| B1 | 批量上传内存峰值（**高优，可能崩溃**） | `batchStore.ts` 用 `Promise.all` 同时解码全部文件，50 张 2048² ≈ 800MB ImageData | 限并发队列（2–3）逐张解码 + 回归测试；与 `exportZip.ts` 串行导出保持一致 |
+| B1 | 批量上传内存峰值（**高优，可能崩溃**） | `batchStore.ts` 用 `Promise.all` 同时解码全部文件；上限 50 张；单张无像素上限（20MB JPEG 可达 8000²≈250MB） | 2026-10-28 用户要求：降低单批张数（如 9）+ 峰值内存预算上限；限并发解码、单张最长边上限、原图只留压缩文件导出时重解码。参数在[决策台](https://claude.ai/artifact/KMQgsKFYx2tDuNCYEPe7hW)敲定 |
 | B2 | 重像素运算移入 Worker | 仅 `colorTolerance` 走 `runPixelTask`；描边与导出合成在主线程 | 扩展 `pixelTasks.ts` 覆盖描边与导出；buffer 用 transfer；保留主线程降级 |
 | B3 | 代码分割 | 单个 `index-*.js` ≈ 829KB | 路由级 `React.lazy`；Konva / JSZip 按需加载；为 AI 模型预留懒加载路径；给出前后 bundle 对比 |
 | B4 | 重复的蒙版 / 撤销逻辑 | 三个 store 的笔刷 undo/redo 实现相似 | `refactor-flow` 抽公共 mask-history 模块，测试先锁定现有行为 |
 | B5 | 错误边界 | 无 ErrorBoundary，异常整页白屏 | 路由级 ErrorBoundary + 中英文案 +「重置当前项目」 |
+| B7 | 加载体验 | 上传后到全部解码完成前无逐张反馈 | 立即出现占位格 + 阶段状态（排队 / 解码 / 去背景 / 完成）、低清缩略图先行、逐张就位；样式在决策台选定 |
 | B6 | 资源释放 | `createObjectURL` 靠 10s `setTimeout` 回收 | 审计 Canvas / Blob / ImageBitmap 生命周期，切换图片 / 离开页面时显式释放（PRD §12.2） |
 
 ## C. 产品优化
@@ -54,6 +55,7 @@ MVP 之后的候选工作。每项启动前按风险分级走 spec → plan 流�
 | C6 | 刷新不丢工作 | 除 i18n 外无持久化（PRD §9.3 允许本地暂存） | IndexedDB 暂存当前项目 +「清除本地数据」 |
 | C7 | 示例体验 | 需上传自己的图才能体验 | 内置自制示例图，一键试用各工作流 |
 | C8 | 其余 PRD 第二阶段 | WebP 仅输入、无 HEIC、无 Alpha 检测 | WebP 导出、HEIC 输入、Alpha 自动检测 / 质量检查（PRD §11.3） |
+| C10 | **AI 创作**（2026-10-28 新增） | 无 | skill + 原图 → 3 张候选 → 选中按打印 DPI 导出；服务端代理保管 token、签名访问密钥、demo 模式；见 [spec](../03-Specs/2026-10-28-ai-skill-generation.md)（S2 待确认）+ [ADR 0002](../02-Architecture/Decisions/0002-server-proxy-on-vercel.md) |
 | C9 | 暗色模式 | [ui-polish spec](../03-Specs/2026-07-12-ui-polish.md) D6 明确本版不做 | 排在最后 |
 
 ## v2 方向 — AI API（2026-07-12 用户决策：本版只留接口）
