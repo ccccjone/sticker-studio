@@ -10,6 +10,7 @@ import { RemovalPanel } from '../features/editor/panels/RemovalPanel'
 import { TransformPanel } from '../features/editor/panels/TransformPanel'
 import { UploadDropzone } from '../features/editor/UploadDropzone'
 import { BatchToolbar } from '../features/batch/BatchToolbar'
+import { RejectedNotice } from '../features/batch/RejectedNotice'
 import { ThumbnailList } from '../features/batch/ThumbnailList'
 import { useBatchStore } from '../features/batch/batchStore'
 
@@ -37,12 +38,16 @@ function BatchWorkspace() {
     return (
       <div className="mx-auto max-w-2xl">
         <UploadDropzone multiple onFiles={(files) => actions.addFiles(files)} />
+        <div className="mt-3">
+          <RejectedNotice />
+        </div>
       </div>
     )
   }
 
   return (
     <div>
+      <RejectedNotice />
       <BatchToolbar />
       <div className="flex flex-col gap-4 lg:flex-row">
         <ThumbnailList />

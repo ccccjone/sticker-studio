@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { readImageSize } from '../imageHeader'
+import { readImageInfo, readImageSize } from '../imageHeader'
 
 const u32be = (n: number) => [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255]
 const u16be = (n: number) => [(n >> 8) & 255, n & 255]
@@ -115,6 +115,56 @@ describe('readImageSize 非法输入', () => {
       for (let n = 0; n < full.length; n++) {
         expect(() => readImageSize(full.slice(0, n))).not.toThrow()
       }
+    }
+  })
+})
+
+function exifApp1(orientation: number, order: 'MM' | 'II', opts: { truncate?: number } = {}) {
+  const w16 = order === 'MM' ? u16be : u16le
+  const w32 = order === 'MM' ? u32be : u32le
+  const tiff = [
+    ...ascii(order),
+    ...w16(0x2a),
+    ...w32(8),
+    ...w16(1), // 1 entry
+    ...w16(0x0112),
+    ...w16(3),
+    ...w32(1),
+    ...w16(orientation),
+    0,
+    0,
+    ...w32(0),
+  ]
+  // truncate 截断 EXIF 载荷本身,但保持 JPEG 段长度自洽(模拟损坏的 EXIF 而非损坏的 JPEG)
+  const full = [...ascii('Exif'), 0, 0, ...tiff]
+  const payload = opts.truncate !== undefined ? full.slice(0, opts.truncate) : full
+  return [0xff, 0xe1, ...u16be(payload.length + 2), ...payload]
+}
+
+describe('readImageSize: EXIF orientation (display-oriented size)', () => {
+  for (const order of ['MM', 'II'] as const) {
+    test(`orientation 6 and 8 swap width/height (${order})`, () => {
+      for (const o of [5, 6, 7, 8]) {
+        expect(readImageSize(jpeg(exifApp1(o, order), sof(0xc0, 400, 200)))).toEqual({ width: 200, height: 400 })
+      }
+      expect(readImageInfo(jpeg(exifApp1(6, order), sof(0xc0, 400, 200)))).toEqual({
+        width: 400,
+        height: 200,
+        orientation: 6,
+      })
+    })
+    test(`orientation 1-4 keep size (${order})`, () => {
+      for (const o of [1, 2, 3, 4]) {
+        expect(readImageSize(jpeg(exifApp1(o, order), sof(0xc0, 400, 200)))).toEqual({ width: 400, height: 200 })
+      }
+    })
+  }
+  test('truncated / corrupt EXIF is treated as orientation 1 without throwing', () => {
+    for (const cut of [0, 4, 8, 12, 14, 20, 24]) {
+      expect(readImageSize(jpeg(exifApp1(6, 'MM', { truncate: cut }), sof(0xc0, 400, 200)))).toEqual({
+        width: 400,
+        height: 200,
+      })
     }
   })
 })

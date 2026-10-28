@@ -143,6 +143,7 @@
   "batch": {
     "title": "Batch Processing",
     "tooMany": "You can add up to 4 images at once; the rest were not added.",
+    "dismissNotice": "Dismiss",
     "status": {
       "pending": "Pending",
       "edited": "Edited",

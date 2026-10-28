@@ -107,18 +107,17 @@ export interface BatchDecoded {
 export async function decodeForBatch(
   file: File,
   opts: { maxDim: number; proxyMax: number } = { maxDim: BATCH_LIMITS.maxDim, proxyMax: PROXY_MAX },
+  /** 调用方已读到的显示方向头尺寸(含 EXIF 旋转);省略则内部读取。 */
+  headerSize?: { width: number; height: number } | null,
 ): Promise<BatchDecoded> {
-  let orig = await peekImageSize(file)
+  let orig = headerSize === undefined ? await peekImageSize(file) : headerSize
   let proxy: RasterImage
   if (orig) {
     const p = fitWithin(orig.width, orig.height, opts.proxyMax)
+    // 头尺寸已是显示方向(readImageSize 处理了 EXIF 5-8),与 createImageBitmap 的 resize 坐标系一致
     proxy = await decodeFileToSize(file, p.width, p.height)
-    // EXIF 旋转可能使实际方向与文件头相反:以代理图方向为准
-    if (orig.width !== orig.height && proxy.width > proxy.height !== orig.width > orig.height) {
-      orig = { width: orig.height, height: orig.width }
-    }
   } else {
-    // 读不到文件头:先全尺寸解码取实际尺寸,再缩到代理尺寸
+    // 读不到文件头:先全尺寸解码取实际尺寸(bitmap 已是显示方向),再缩到代理尺寸
     const bitmap = await createImageBitmap(file)
     try {
       orig = { width: bitmap.width, height: bitmap.height }

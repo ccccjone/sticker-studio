@@ -6,6 +6,11 @@ export interface ImageSize {
   height: number
 }
 
+/** width/height 为编码尺寸(未应用 EXIF 旋转);orientation 为 EXIF 方向 1-8。 */
+export interface ImageInfo extends ImageSize {
+  orientation: number
+}
+
 const u16be = (b: Uint8Array, o: number) => (b[o] << 8) | b[o + 1]
 const u16le = (b: Uint8Array, o: number) => b[o] | (b[o + 1] << 8)
 const u24le = (b: Uint8Array, o: number) => b[o] | (b[o + 1] << 8) | (b[o + 2] << 16)
@@ -33,8 +38,38 @@ function isSof(m: number) {
   return m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc
 }
 
-function readJpeg(b: Uint8Array): ImageSize | null {
+/** 从 APP1 段数据区(p..end)解析 EXIF Orientation;任何越界 / 损坏返回 1。 */
+function readExifOrientation(b: Uint8Array, p: number, end: number): number {
+  try {
+    if (!matches(b, p, [...ascii('Exif'), 0, 0])) return 1
+    const t = p + 6 // TIFF 头
+    if (t + 8 > end) return 1
+    const little = b[t] === 0x49 && b[t + 1] === 0x49
+    if (!little && !(b[t] === 0x4d && b[t + 1] === 0x4d)) return 1
+    const r16 = little ? u16le : u16be
+    const r32 = little ? u32le : u32be
+    if (r16(b, t + 2) !== 0x2a) return 1
+    const ifd = t + r32(b, t + 4)
+    if (ifd + 2 > end) return 1
+    const count = r16(b, ifd)
+    for (let i = 0; i < count; i++) {
+      const e = ifd + 2 + i * 12
+      if (e + 12 > end) return 1
+      if (r16(b, e) === 0x0112) {
+        if (r16(b, e + 2) !== 3) return 1
+        const v = r16(b, e + 8)
+        return v >= 1 && v <= 8 ? v : 1
+      }
+    }
+    return 1
+  } catch {
+    return 1
+  }
+}
+
+function readJpeg(b: Uint8Array): ImageInfo | null {
   let p = 2
+  let orientation = 1
   while (p < b.length) {
     if (b[p] !== 0xff) return null
     while (p < b.length && b[p] === 0xff) p++ // 填充
@@ -45,9 +80,13 @@ function readJpeg(b: Uint8Array): ImageSize | null {
     if (p + 2 > b.length) return null
     const len = u16be(b, p)
     if (len < 2) return null
+    if (m === 0xe1 && orientation === 1) {
+      orientation = readExifOrientation(b, p + 2, Math.min(p + len, b.length))
+    }
     if (isSof(m)) {
       if (p + 7 > b.length) return null
-      return size(u16be(b, p + 5), u16be(b, p + 3))
+      const s = size(u16be(b, p + 5), u16be(b, p + 3))
+      return s && { ...s, orientation }
     }
     p += len
   }
@@ -74,13 +113,26 @@ function readWebp(b: Uint8Array): ImageSize | null {
   return null
 }
 
-export function readImageSize(bytes: Uint8Array): ImageSize | null {
+export function readImageInfo(bytes: Uint8Array): ImageInfo | null {
   try {
-    if (matches(bytes, 0, PNG_SIG)) return readPng(bytes)
+    if (matches(bytes, 0, PNG_SIG)) {
+      const r = readPng(bytes)
+      return r && { ...r, orientation: 1 }
+    }
     if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xd8) return readJpeg(bytes)
-    if (matches(bytes, 0, ascii('RIFF'))) return readWebp(bytes)
+    if (matches(bytes, 0, ascii('RIFF'))) {
+      const r = readWebp(bytes)
+      return r && { ...r, orientation: 1 }
+    }
     return null
   } catch {
     return null
   }
+}
+
+/** 显示方向尺寸:JPEG EXIF 方向 5-8 时宽高对调(createImageBitmap 的 resize 发生在旋转之后)。 */
+export function readImageSize(bytes: Uint8Array): ImageSize | null {
+  const info = readImageInfo(bytes)
+  if (!info) return null
+  return info.orientation >= 5 ? { width: info.height, height: info.width } : { width: info.width, height: info.height }
 }

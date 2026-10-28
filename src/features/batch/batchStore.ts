@@ -83,6 +83,7 @@ export interface RejectedFile {
 
 export interface BatchActions extends EditorActions {
   addFiles(files: File[]): Promise<{ rejected: RejectedFile[] }>
+  dismissRejected(): void
   selectItem(id: string): void
   toggleSelect(id: string): void
   selectAll(selected: boolean): void
@@ -107,6 +108,8 @@ interface BatchState {
   currentId: string | null
   undoStack: UndoEntry[]
   redoStack: UndoEntry[]
+  /** 最近一次 addFiles 的拒收列表(批量页统一展示,可关闭) */
+  lastRejected: RejectedFile[]
   actions: BatchActions
 }
 
@@ -181,6 +184,7 @@ export const useBatchStore = create<BatchState>()((set, get) => {
     currentId: null,
     undoStack: [],
     redoStack: [],
+    lastRejected: [],
     actions: {
       async addFiles(files) {
         const { items } = get()
@@ -205,25 +209,37 @@ export const useBatchStore = create<BatchState>()((set, get) => {
             try {
               const size = await peekImageSize(file)
               const weight = size ? size.width * size.height : MAX_DECODE_WEIGHT
-              return { file, decoded: await decodeQueue.add(weight, () => decodeForBatch(file)).promise }
+              return {
+                file,
+                decoded: await decodeQueue.add(weight, () => decodeForBatch(file, undefined, size)).promise,
+              }
             } catch {
               return { file, decoded: null }
             }
           }),
         )
-        const newItems: BatchItem[] = []
+        const decodedItems: BatchItem[] = []
         for (const { file, decoded } of decodedResults) {
           if (!decoded) {
             rejected.push({ name: file.name, reason: 'upload.decodeFailed' })
             continue
           }
-          newItems.push(buildBatchItem(decoded))
+          decodedItems.push(buildBatchItem(decoded))
         }
+        // 写入时按当前条目数再截断一次:多次 addFiles 并发时开头的计数已过期
+        let newItems: BatchItem[] = decodedItems
+        set((state) => {
+          const room = Math.max(0, MAX_BATCH_ITEMS - state.items.length)
+          newItems = decodedItems.slice(0, room)
+          return newItems.length > 0
+            ? { items: [...state.items, ...newItems], currentId: state.currentId ?? newItems[0].id }
+            : state
+        })
+        for (const dropped of decodedItems.slice(newItems.length)) {
+          rejected.push({ name: dropped.meta.name, reason: 'batch.tooMany' })
+        }
+        set({ lastRejected: rejected })
         if (newItems.length > 0) {
-          set((state) => ({
-            items: [...state.items, ...newItems],
-            currentId: state.currentId ?? newItems[0].id,
-          }))
           // 自动预应用去背景（spec 2026-07-12 §F1）：串行处理，已透明/失败的条目跳过
           for (const added of newItems) {
             const auto = await computeAutoRemoval(added.proxy, added.removalDraft)
@@ -238,6 +254,10 @@ export const useBatchStore = create<BatchState>()((set, get) => {
           }
         }
         return { rejected }
+      },
+
+      dismissRejected() {
+        set({ lastRejected: [] })
       },
 
       selectItem(id) {
@@ -363,6 +383,7 @@ export const useBatchStore = create<BatchState>()((set, get) => {
 
       // ---- EditorActions, applied to whichever item is `currentId` ----
 
+      // 注意:批量 UI 不经过此路径(addFiles 走文件来源);此处仍为常驻原图,spec 修订已记为非目标。
       async loadImage(decoded) {
         const item = buildBatchItem({ proxy: decoded.proxy, meta: decoded.meta, source: residentSource(decoded.image) })
         set((state) => ({ items: [...state.items, item], currentId: item.id, undoStack: [], redoStack: [] }))

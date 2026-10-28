@@ -143,6 +143,7 @@
   "batch": {
     "title": "批量处理图片",
     "tooMany": "已超过单次批量 4 张的上限，超出部分未加入列表",
+    "dismissNotice": "关闭提示",
     "status": {
       "pending": "未处理",
       "edited": "已编辑",

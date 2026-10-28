@@ -31,7 +31,6 @@ export function UploadDropzone({ multiple = false, onFiles }: UploadDropzoneProp
   const { actions } = useEditorContext()
   const inputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string | null>(null)
-  const [rejected, setRejected] = useState<UploadRejection[]>([])
   const [loading, setLoading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
 
@@ -62,9 +61,8 @@ export function UploadDropzone({ multiple = false, onFiles }: UploadDropzoneProp
       if (onFiles) {
         setError(null)
         setLoading(true)
-        Promise.resolve(onFiles(files))
-          .then((result) => setRejected(result?.rejected ?? []))
-          .finally(() => setLoading(false))
+        // 拒收提示由调用方统一渲染(批量页的 RejectedNotice),这里不再自己显示,避免重复
+        Promise.resolve(onFiles(files)).finally(() => setLoading(false))
         return
       }
       loadFile(files[0])
@@ -135,15 +133,6 @@ export function UploadDropzone({ multiple = false, onFiles }: UploadDropzoneProp
         <p role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
           {t(error)}
         </p>
-      )}
-      {rejected.length > 0 && (
-        <ul role="alert" className="mt-3 space-y-1 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-          {rejected.map((r, i) => (
-            <li key={`${r.name}-${i}`}>
-              {r.name}: {t(r.reason)}
-            </li>
-          ))}
-        </ul>
       )}
     </div>
   )

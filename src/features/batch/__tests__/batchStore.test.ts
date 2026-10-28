@@ -10,6 +10,8 @@ const decodeCtl = vi.hoisted(() => ({
   inFlight: 0,
   maxInFlight: 0,
   failNames: new Set<string>(),
+  nullHeaderNames: new Set<string>(),
+  startOrder: [] as string[],
   waiters: new Map<string, Promise<void>>(),
 }))
 
@@ -17,8 +19,9 @@ vi.mock('../../../canvas/decode', async () => {
   const actual = await vi.importActual<typeof import('../../../canvas/decode')>('../../../canvas/decode')
   return {
     ...actual,
-    peekImageSize: vi.fn(async () => ({ width: 8, height: 8 })),
+    peekImageSize: vi.fn(async (file: File) => (decodeCtl.nullHeaderNames.has(file.name) ? null : { width: 8, height: 8 })),
     decodeForBatch: vi.fn(async (file: File) => {
+      decodeCtl.startOrder.push(file.name)
       decodeCtl.inFlight++
       decodeCtl.maxInFlight = Math.max(decodeCtl.maxInFlight, decodeCtl.inFlight)
       try {
@@ -62,6 +65,7 @@ vi.mock('../../../workers/runPixelTask', () => ({
 
 const { useBatchStore } = await import('../batchStore')
 const { runPixelTask } = await import('../../../workers/runPixelTask')
+const { peekImageSize, decodeForBatch } = await import('../../../canvas/decode')
 // 引擎实现依赖 runPixelTask，同样要在 mock 之后注册
 const { registerDefaultEngines } = await import('../../../engines')
 registerDefaultEngines()
@@ -105,8 +109,10 @@ beforeEach(() => {
   decodeCtl.inFlight = 0
   decodeCtl.maxInFlight = 0
   decodeCtl.failNames.clear()
+  decodeCtl.nullHeaderNames.clear()
+  decodeCtl.startOrder = []
   decodeCtl.waiters.clear()
-  useBatchStore.setState({ items: [], currentId: null, undoStack: [], redoStack: [] })
+  useBatchStore.setState({ items: [], currentId: null, undoStack: [], redoStack: [], lastRejected: [] })
   vi.mocked(runPixelTask).mockImplementation(async (task) => runTask(task))
 })
 
@@ -385,5 +391,55 @@ describe('batchStore: background', () => {
     actions().setBackground({ kind: 'color', color: '#112233' })
     await actions().applyTo('all', { background: null })
     expect(useBatchStore.getState().items[0].params.background).toBeUndefined()
+  })
+})
+
+describe('batchStore: rejections visible + cap race + header reuse', () => {
+  test('lastRejected records tooMany entries and is cleared by a clean add / dismissRejected', async () => {
+    await actions().addFiles(Array.from({ length: 6 }, (_, i) => makeFile(`img-${i}.png`)))
+    const { lastRejected } = useBatchStore.getState()
+    expect(lastRejected).toHaveLength(2)
+    expect(lastRejected.every((r) => r.reason === 'batch.tooMany')).toBe(true)
+    actions().dismissRejected()
+    expect(useBatchStore.getState().lastRejected).toEqual([])
+    useBatchStore.setState({ lastRejected: [{ name: 'x', reason: 'batch.tooMany' }] })
+    useBatchStore.setState({ items: [], currentId: null })
+    await actions().addFiles([makeFile('ok.png')])
+    expect(useBatchStore.getState().lastRejected).toEqual([])
+  })
+
+  test('two concurrent addFiles calls cannot exceed the 4-item cap', async () => {
+    const releases: Array<() => void> = []
+    const names = ['a1', 'a2', 'a3', 'b1', 'b2', 'b3'].map((n) => `${n}.png`)
+    for (const n of names) decodeCtl.waiters.set(n, new Promise<void>((res) => releases.push(res)))
+    const p1 = actions().addFiles(names.slice(0, 3).map((n) => makeFile(n)))
+    const p2 = actions().addFiles(names.slice(3).map((n) => makeFile(n)))
+    await new Promise((r) => setTimeout(r, 20))
+    releases.forEach((r) => r())
+    const [r1, r2] = await Promise.all([p1, p2])
+    expect(useBatchStore.getState().items).toHaveLength(4)
+    expect(r1.rejected.length + r2.rejected.length).toBe(2)
+    expect([...r1.rejected, ...r2.rejected].every((r) => r.reason === 'batch.tooMany')).toBe(true)
+  })
+
+  test('the header size read by addFiles is passed to decodeForBatch (no second read)', async () => {
+    vi.mocked(peekImageSize).mockClear()
+    vi.mocked(decodeForBatch).mockClear()
+    await actions().addFiles([makeFile('a.png')])
+    expect(peekImageSize).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(decodeForBatch).mock.calls[0][2]).toEqual({ width: 8, height: 8 })
+  })
+
+  test('a file with an unreadable header (weight = maxWeight) runs exclusively', async () => {
+    decodeCtl.nullHeaderNames.add('nohdr.png')
+    for (const order of [['nohdr.png', 'ok.png'], ['ok.png', 'nohdr.png']]) {
+      decodeCtl.startOrder = []
+      decodeCtl.maxInFlight = 0
+      decodeCtl.waiters.clear()
+      useBatchStore.setState({ items: [], currentId: null })
+      await actions().addFiles(order.map((n) => makeFile(n)))
+      expect(decodeCtl.maxInFlight).toBe(1)
+      expect(decodeCtl.startOrder).toEqual(order)
+    }
   })
 })
