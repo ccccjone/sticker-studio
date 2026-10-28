@@ -16,7 +16,7 @@ MVP 之后的候选工作。每项启动前按风险分级走 spec → plan 流�
 
 ## 建议顺序（待确认）
 
-1. B1 内存修复 + B7 加载体验 + B5 错误边界（2026-10-28 用户：先 refine，再上线）
+1. B1 内存修复 + B7 加载体验 + B5 错误边界（2026-10-28 用户：先 refine，再上线） —— **已完成**（2026-10-28，见 docs/04-Plans/2026-10-28-{batch-memory-budget,batch-loading-ux,error-boundary}.md）
 2. C10 AI 创作（S2，确认后）；上线改为 Vercel（ADR 0002）
 3. B3 代码分割（为 C1 铺路）
 4. C1 本地 AI 去背景 → C3 defringe → C2 自动拆分
