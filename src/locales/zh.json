@@ -324,5 +324,15 @@
   },
   "footer": {
     "local": "所有图片仅在您的浏览器本地处理"
+  },
+  "errorBoundary": {
+    "title": "这个页面出了点问题",
+    "desc": "你的图片仍只在本地。可以先重试；还不行就重置当前项目（未导出的编辑会丢失），或去其他页面。",
+    "retry": "重试",
+    "reset": "重置当前项目",
+    "home": "返回首页",
+    "fatalTitle": "Sticker Studio 出了点问题",
+    "fatalDesc": "请刷新页面后重试。",
+    "reload": "刷新页面"
   }
 }

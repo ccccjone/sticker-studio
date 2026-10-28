@@ -324,5 +324,15 @@
   },
   "footer": {
     "local": "All images are processed locally in your browser"
+  },
+  "errorBoundary": {
+    "title": "Something went wrong on this page",
+    "desc": "Your images are still only on this device. Try again first; if that doesn't help, reset the current project (unexported edits will be lost) or go to another page.",
+    "retry": "Retry",
+    "reset": "Reset current project",
+    "home": "Back to home",
+    "fatalTitle": "Something went wrong in Sticker Studio",
+    "fatalDesc": "Please reload the page and try again.",
+    "reload": "Reload page"
   }
 }

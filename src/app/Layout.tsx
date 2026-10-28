@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Link, NavLink, Outlet } from 'react-router'
 import { Icon } from '../components/Icon'
+import { RouteErrorBoundary } from './ErrorBoundary'
 
 const LANGS = [
   { code: 'zh', label: '中文' },
@@ -74,7 +75,9 @@ export function Layout() {
         </div>
       </header>
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">
-        <Outlet />
+        <RouteErrorBoundary>
+          <Outlet />
+        </RouteErrorBoundary>
       </main>
       <footer className="border-t border-zinc-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-3 text-xs text-zinc-400">
