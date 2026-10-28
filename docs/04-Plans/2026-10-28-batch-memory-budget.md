@@ -21,15 +21,15 @@
 
 ## Tasks
 
-- [ ] Task 1: core 纯模块（T2）
+- [x] Task 1: core 纯模块（T2）
   - `readImageSize(bytes: Uint8Array): { width, height } | null`：PNG IHDR、JPEG 扫描到 SOF0-3/5-7/9-11/13-15（跳过 APPn、处理填充 0xFF）、WebP VP8 / VP8L / VP8X；测试用手工构造的字节夹具（含 EXIF 段在前的 JPEG、progressive SOF2、截断文件）
   - `createWeightedQueue({ maxConcurrency, maxWeight })` → `add(weight, run: (signal) => Promise<T>) → { promise, cancel() }`；权重 > maxWeight 的任务在空闲时独占运行；测试用可控 deferred 验证并发、权重、取消、失败隔离、FIFO 顺序
   - `estimateBatchPeakBytes({ items, maxDim, proxyMax, concurrency })` + 导出常量 `BATCH_LIMITS = { maxItems: 4, maxDim: 4096, concurrency: 3, peakBudgetBytes: 512 MiB }`；测试：估算 ≤ 预算
   - 红 → 绿；commit：`feat(core): image header sizing, weighted queue, batch memory budget`
-- [ ] Task 2: ImageSource 抽象（T3，行为不变的跨模块重构）
+- [x] Task 2: ImageSource 抽象（T3，行为不变的跨模块重构）
   - `ImageSource { width; height; load(): Promise<RasterImage> }`；`residentSource(raster)` 放 `src/canvas/imageSource.ts`（core 只放类型）
   - `EditorItem.image` → `source`；所有 `.image.width/height` → `.source.width/height`；导出路径 `await item.source.load()`；`computeExportMask(item, image)` 接收已加载的原图
-  - 拆分页：sheet 与 piece 用 residentSource（crop 后的 raster）
+  - 拆分页：piece 用 residentSource（crop 后的 raster）；sheet 保持 RasterImage（只有一张，用于裁切）
   - 现有测试只做机械改名，不改断言；verify.sh 全绿、测试数不减
   - commit：`refactor(editor): EditorItem.image -> source: ImageSource (lazy original)`
 - [ ] Task 3: 批量上传管线（T3）
@@ -47,4 +47,6 @@ verify.sh 全绿且测试数 ≥ 176；`core/` 无 React / DOM import（`grep -r
 
 ## Progress
 
-- 未开始
+- 已完成：Task 1（52c5749，T2，主会话复核 diff + verify 29/203）；Task 2（837c6a9，T3，reviewer APPROVE：verify 30/204，真实 Chrome 三条导出路径像素断言 11/11，外部请求 0）
+- 当前：Task 3
+- 偏离：VP8 有损起始码偏移按真实格式（数据偏移 3），plan 原描述笔误；reviewer 建议 Task 3 补「load 失败 → manifest failed」测试
