@@ -52,6 +52,13 @@
 6. 批量条目不再持有原分辨率像素（单测：`addFiles` 后条目上没有原图 `RasterImage`，只有 `source.load`）。
 7. 单图、拆分页现有测试全部保持通过；Playwright：批量上传 4 张 → 导出 ZIP → 4 张 PNG + manifest，外部请求 0。
 
+## 修订（2026-10-28，reviewer 实证后补充）
+
+- 文件头尺寸必须是**显示方向**：JPEG 读取 APP1 Exif Orientation，5-8 时宽高对调（Chrome 的 createImageBitmap resize 发生在 EXIF 旋转之后）。PNG eXIf / WebP EXIF 暂不处理，记为已知限制。
+- 拒收提示（超过 4 张、格式错误、解码失败）在批量页任何状态下都可见（不依赖上传区是否挂载）。
+- 上限在写入 store 时按当前条目数再截断一次，防止多次上传的竞态。
+- 批量页的 `loadImage` 路径仍是常驻原图；UI 不经过它，记为非目标。
+
 ## 假设
 
 - 浏览器的 `createImageBitmap` resize 能在 Chrome / Edge / Firefox 降低解码峰值；Safari 若不支持则降级（峰值较高但受并发权重约束）。
