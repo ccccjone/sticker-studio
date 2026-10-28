@@ -141,3 +141,34 @@ export async function decodeForBatch(
     source: fileSource(file, target.width, target.height),
   }
 }
+
+/**
+ * 低清缩略图:按头尺寸缩放解码(最长边 ≤ maxSize),返回 dataURL;任何失败返回 null。
+ * 依赖浏览器 API,不做单测。
+ */
+export async function decodeThumbnail(file: File, maxSize: number): Promise<string | null> {
+  try {
+    const size = await peekImageSize(file)
+    const opts: ImageBitmapOptions = { resizeQuality: 'low' }
+    if (size) {
+      const t = fitWithin(size.width, size.height, maxSize)
+      opts.resizeWidth = t.width
+      opts.resizeHeight = t.height
+    }
+    const bitmap = await createImageBitmap(file, opts)
+    try {
+      const t = fitWithin(bitmap.width, bitmap.height, maxSize)
+      const canvas = document.createElement('canvas')
+      canvas.width = t.width
+      canvas.height = t.height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return null
+      ctx.drawImage(bitmap, 0, 0, t.width, t.height)
+      return canvas.toDataURL('image/jpeg', 0.7)
+    } finally {
+      bitmap.close()
+    }
+  } catch {
+    return null
+  }
+}

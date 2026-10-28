@@ -11,7 +11,7 @@
  */
 
 import { create } from 'zustand'
-import { decodeForBatch, peekImageSize, validateFile, type BatchDecoded } from '../../canvas/decode'
+import { decodeForBatch, decodeThumbnail, peekImageSize, validateFile, type BatchDecoded } from '../../canvas/decode'
 import { encodeRaster, downloadBlob } from '../../canvas/encode'
 import { residentSource } from '../../canvas/imageSource'
 import { BATCH_LIMITS } from '../../core/memoryBudget'
@@ -42,6 +42,21 @@ const MAX_DECODE_WEIGHT = BATCH_LIMITS.concurrency * BATCH_LIMITS.maxDim * BATCH
 // 模块级队列:跨多次 addFiles 共享,保证全局并发解码 ≤ concurrency
 const decodeQueue = createWeightedQueue({ maxConcurrency: BATCH_LIMITS.concurrency, maxWeight: MAX_DECODE_WEIGHT })
 
+const THUMB_SIZE = 96
+
+// 槽位 id -> 队列任务取消句柄(缩略图 + 正式解码)
+const slotCancels = new Map<string, Array<() => boolean>>()
+// 自动去背景串行链:跨 addFiles 共享,保证同一时刻最多一张在算
+let removalChain: Promise<void> = Promise.resolve()
+let seqCounter = 0
+function nextSeq(): number {
+  return ++seqCounter
+}
+
+function isAbort(e: unknown): boolean {
+  return e instanceof Error && e.name === 'AbortError'
+}
+
 const MIN_CANVAS = 16
 const MAX_CANVAS = 4096
 const MIN_SCALE = 0.1
@@ -59,6 +74,21 @@ export type BatchScope = 'current' | 'selected' | 'all'
 export interface BatchItem extends EditorItem {
   status: BatchStatus
   selected: boolean
+  /** 选择顺序序号(槽位与条目共用,列表按它排序) */
+  seq: number
+  /** 自动去背景进行中 */
+  removing: boolean
+}
+
+export type UploadStage = 'queued' | 'decoding'
+
+export interface UploadSlot {
+  id: string
+  seq: number
+  name: string
+  stage: UploadStage
+  /** 低清缩略图 dataURL;未就绪或失败为 null */
+  thumb: string | null
 }
 
 export interface BatchApplySettings {
@@ -84,6 +114,8 @@ export interface RejectedFile {
 export interface BatchActions extends EditorActions {
   addFiles(files: File[]): Promise<{ rejected: RejectedFile[] }>
   dismissRejected(): void
+  /** 取消排队中的上传槽位;解码中 / 不存在则无操作 */
+  cancelUpload(id: string): void
   selectItem(id: string): void
   toggleSelect(id: string): void
   selectAll(selected: boolean): void
@@ -105,6 +137,8 @@ type UndoEntry =
 
 interface BatchState {
   items: BatchItem[]
+  /** 尚未就位的上传槽位,按选择顺序 */
+  uploads: UploadSlot[]
   currentId: string | null
   undoStack: UndoEntry[]
   redoStack: UndoEntry[]
@@ -136,7 +170,7 @@ function patchItem(items: BatchItem[], id: string, updater: (item: BatchItem) =>
   return items.map((it) => (it.id === id ? updater(it) : it))
 }
 
-function buildBatchItem(decoded: BatchDecoded): BatchItem {
+function buildBatchItem(decoded: BatchDecoded, seq: number = nextSeq()): BatchItem {
   const canvasW = DEFAULT_CANVAS_SIZE
   const canvasH = DEFAULT_CANVAS_SIZE
   const transform = { ...defaultTransform(), ...fit(decoded.source.width, decoded.source.height, canvasW, canvasH, 'contain') }
@@ -163,6 +197,8 @@ function buildBatchItem(decoded: BatchDecoded): BatchItem {
     params,
     status: 'pending',
     selected: true,
+    seq,
+    removing: false,
   }
 }
 
@@ -181,16 +217,17 @@ export const useBatchStore = create<BatchState>()((set, get) => {
 
   return {
     items: [],
+    uploads: [],
     currentId: null,
     undoStack: [],
     redoStack: [],
     lastRejected: [],
     actions: {
       async addFiles(files) {
-        const { items } = get()
+        // 同步段(第一个 await 之前):计数、校验、占位槽位,所以多次调用之间没有竞态
         const rejected: RejectedFile[] = []
-        const accepted: File[] = []
-        let count = items.length
+        const slots: Array<{ slot: UploadSlot; file: File }> = []
+        let count = get().items.length + get().uploads.length
         for (const file of files) {
           if (count >= MAX_BATCH_ITEMS) {
             rejected.push({ name: file.name, reason: 'batch.tooMany' })
@@ -201,59 +238,108 @@ export const useBatchStore = create<BatchState>()((set, get) => {
             rejected.push({ name: file.name, reason: errorKey })
             continue
           }
-          accepted.push(file)
+          slots.push({ slot: { id: nextId(), seq: nextSeq(), name: file.name, stage: 'queued', thumb: null }, file })
           count++
         }
-        const decodedResults = await Promise.all(
-          accepted.map(async (file) => {
+        set((state) => ({ uploads: [...state.uploads, ...slots.map((s) => s.slot)], lastRejected: [...rejected] }))
+
+        const hasSlot = (id: string) => get().uploads.some((u) => u.id === id)
+        const patchSlot = (id: string, patch: Partial<UploadSlot>) =>
+          set((state) => ({ uploads: state.uploads.map((u) => (u.id === id ? { ...u, ...patch } : u)) }))
+        const fail = (slot: UploadSlot) => {
+          slotCancels.delete(slot.id)
+          if (!hasSlot(slot.id)) return
+          const entry: RejectedFile = { name: slot.name, reason: 'upload.decodeFailed' }
+          rejected.push(entry)
+          set((state) => ({ uploads: state.uploads.filter((u) => u.id !== slot.id), lastRejected: [...state.lastRejected, entry] }))
+        }
+
+        // 先读完所有头尺寸,再先排所有缩略图任务、后排正式解码任务(FIFO 下缩略图先出)
+        const sizes = await Promise.all(
+          slots.map(async ({ file }) => {
             try {
-              const size = await peekImageSize(file)
-              const weight = size ? size.width * size.height : MAX_DECODE_WEIGHT
-              return {
-                file,
-                decoded: await decodeQueue.add(weight, () => decodeForBatch(file, undefined, size)).promise,
-              }
+              return { ok: true as const, size: await peekImageSize(file) }
             } catch {
-              return { file, decoded: null }
+              return { ok: false as const, size: null }
             }
           }),
         )
-        const decodedItems: BatchItem[] = []
-        for (const { file, decoded } of decodedResults) {
-          if (!decoded) {
-            rejected.push({ name: file.name, reason: 'upload.decodeFailed' })
-            continue
+        const plans = slots.map((s, i) => ({ ...s, ...sizes[i] }))
+        const live = plans.filter((p) => {
+          if (!hasSlot(p.slot.id)) return false
+          if (!p.ok) {
+            fail(p.slot)
+            return false
           }
-          decodedItems.push(buildBatchItem(decoded))
-        }
-        // 写入时按当前条目数再截断一次:多次 addFiles 并发时开头的计数已过期
-        let newItems: BatchItem[] = decodedItems
-        set((state) => {
-          const room = Math.max(0, MAX_BATCH_ITEMS - state.items.length)
-          newItems = decodedItems.slice(0, room)
-          return newItems.length > 0
-            ? { items: [...state.items, ...newItems], currentId: state.currentId ?? newItems[0].id }
-            : state
+          return true
         })
-        for (const dropped of decodedItems.slice(newItems.length)) {
-          rejected.push({ name: dropped.meta.name, reason: 'batch.tooMany' })
+        const weightOf = (size: { width: number; height: number } | null) => (size ? size.width * size.height : MAX_DECODE_WEIGHT)
+        for (const p of live) {
+          const h = decodeQueue.add(weightOf(p.size), () => decodeThumbnail(p.file, THUMB_SIZE))
+          slotCancels.set(p.slot.id, [h.cancel])
+          h.promise
+            .then((thumb) => {
+              if (thumb && hasSlot(p.slot.id)) patchSlot(p.slot.id, { thumb })
+            })
+            .catch(() => {})
         }
-        set({ lastRejected: rejected })
-        if (newItems.length > 0) {
-          // 自动预应用去背景（spec 2026-07-12 §F1）：串行处理，已透明/失败的条目跳过
-          for (const added of newItems) {
-            const auto = await computeAutoRemoval(added.proxy, added.removalDraft)
-            if (!auto) continue
-            set((state) => ({
-              items: patchItem(state.items, added.id, (it) =>
-                it.mask === null && !it.params.removal
-                  ? { ...it, mask: auto.mask, removalBaseline: auto.baseline, params: { ...it.params, removal: auto.removal } }
-                  : it,
-              ),
-            }))
-          }
-        }
+        const jobs = live.map((p) => {
+          const h = decodeQueue.add(weightOf(p.size), () => {
+            patchSlot(p.slot.id, { stage: 'decoding' })
+            return decodeForBatch(p.file, undefined, p.size)
+          })
+          slotCancels.set(p.slot.id, [...(slotCancels.get(p.slot.id) ?? []), h.cancel])
+          return (async () => {
+            let decoded: BatchDecoded
+            try {
+              decoded = await h.promise
+            } catch (e) {
+              if (isAbort(e)) return
+              fail(p.slot)
+              return
+            }
+            slotCancels.delete(p.slot.id)
+            if (!hasSlot(p.slot.id)) return // 期间被 clear:丢弃结果
+            const item: BatchItem = { ...buildBatchItem(decoded, p.slot.seq), removing: true }
+            set((state) => {
+              const at = state.items.findIndex((it) => it.seq > item.seq)
+              const items = at < 0 ? [...state.items, item] : [...state.items.slice(0, at), item, ...state.items.slice(at)]
+              return {
+                items,
+                uploads: state.uploads.filter((u) => u.id !== p.slot.id),
+                currentId: state.currentId ?? item.id,
+              }
+            })
+            // 自动预应用去背景（spec 2026-07-12 §F1）：模块级串行链；已透明/失败的条目跳过
+            const run = removalChain.then(async () => {
+              try {
+                const auto = await computeAutoRemoval(item.proxy, item.removalDraft)
+                set((state) => ({
+                  items: patchItem(state.items, item.id, (it) => {
+                    const base = { ...it, removing: false }
+                    return auto && it.mask === null && !it.params.removal
+                      ? { ...base, mask: auto.mask, removalBaseline: auto.baseline, params: { ...it.params, removal: auto.removal } }
+                      : base
+                  }),
+                }))
+              } catch {
+                set((state) => ({ items: patchItem(state.items, item.id, (it) => ({ ...it, removing: false })) }))
+              }
+            })
+            removalChain = run
+            await run
+          })()
+        })
+        await Promise.all(jobs)
         return { rejected }
+      },
+
+      cancelUpload(id) {
+        const slot = get().uploads.find((u) => u.id === id)
+        if (!slot || slot.stage !== 'queued') return
+        for (const cancel of slotCancels.get(id) ?? []) cancel()
+        slotCancels.delete(id)
+        set((state) => ({ uploads: state.uploads.filter((u) => u.id !== id) }))
       },
 
       dismissRejected() {
@@ -399,7 +485,9 @@ export const useBatchStore = create<BatchState>()((set, get) => {
       },
 
       clear() {
-        set({ items: [], currentId: null, undoStack: [], redoStack: [], lastRejected: [] })
+        for (const cancels of slotCancels.values()) for (const cancel of cancels) cancel()
+        slotCancels.clear()
+        set({ items: [], uploads: [], currentId: null, undoStack: [], redoStack: [], lastRejected: [] })
       },
 
       setRemovalDraft(patch) {

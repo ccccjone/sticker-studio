@@ -39,6 +39,7 @@ vi.mock('../../../canvas/decode', async () => {
         source: { width: 8, height: 8, load: sourceLoad },
       }
     }),
+    decodeThumbnail: vi.fn(async (file: File) => `data:thumb/${file.name}`),
     decodeFile: vi.fn(async (file: File) => {
       const image = createRaster(8, 8, [255, 255, 255, 255])
       // 默认带透明像素（跳过自动预应用，保持既有用例语义）；文件名含 opaque 时全不透明
@@ -106,13 +107,14 @@ function seedItems(n: number) {
 
 beforeEach(() => {
   sourceLoad.mockReset()
+  vi.mocked(decodeForBatch).mockClear()
   decodeCtl.inFlight = 0
   decodeCtl.maxInFlight = 0
   decodeCtl.failNames.clear()
   decodeCtl.nullHeaderNames.clear()
   decodeCtl.startOrder = []
   decodeCtl.waiters.clear()
-  useBatchStore.setState({ items: [], currentId: null, undoStack: [], redoStack: [], lastRejected: [] })
+  useBatchStore.setState({ items: [], uploads: [], currentId: null, undoStack: [], redoStack: [], lastRejected: [] })
   vi.mocked(runPixelTask).mockImplementation(async (task) => runTask(task))
 })
 
@@ -448,5 +450,135 @@ describe('batchStore: rejections visible + cap race + header reuse', () => {
       expect(decodeCtl.maxInFlight).toBe(1)
       expect(decodeCtl.startOrder).toEqual(order)
     }
+  })
+})
+
+const tick = (ms = 15) => new Promise((r) => setTimeout(r, ms))
+
+function gate(names: string[]) {
+  const releases = new Map<string, () => void>()
+  for (const n of names) decodeCtl.waiters.set(n, new Promise<void>((res) => releases.set(n, res)))
+  return releases
+}
+
+describe('batchStore: upload slots', () => {
+  test('slots exist synchronously in selection order; count includes slots', async () => {
+    const p1 = actions().addFiles(['a.png', 'b.png', 'c.png'].map((n) => makeFile(n)))
+    const { uploads } = useBatchStore.getState()
+    expect(uploads.map((u) => u.name)).toEqual(['a.png', 'b.png', 'c.png'])
+    expect(uploads.every((u) => u.stage === 'queued')).toBe(true)
+    expect(uploads[0].seq).toBeLessThan(uploads[1].seq)
+    const p2 = actions().addFiles([makeFile('d.png'), makeFile('e.png')])
+    expect(useBatchStore.getState().uploads).toHaveLength(4)
+    expect(useBatchStore.getState().lastRejected).toEqual([{ name: 'e.png', reason: 'batch.tooMany' }])
+    const [, r2] = await Promise.all([p1, p2])
+    expect(r2.rejected).toEqual([{ name: 'e.png', reason: 'batch.tooMany' }])
+    expect(useBatchStore.getState().uploads).toHaveLength(0)
+    expect(useBatchStore.getState().items).toHaveLength(4)
+  })
+
+  test('slot becomes decoding when its real decode starts; thumbnail is stored', async () => {
+    const rel = gate(['a.png', 'b.png', 'c.png', 'd.png'])
+    const p = actions().addFiles(['a.png', 'b.png', 'c.png', 'd.png'].map((n) => makeFile(n)))
+    await tick()
+    const { uploads } = useBatchStore.getState()
+    expect(uploads.map((u) => u.stage)).toEqual(['decoding', 'decoding', 'decoding', 'queued'])
+    expect(uploads[0].thumb).toBe('data:thumb/a.png')
+    rel.forEach((r) => r())
+    await p
+  })
+
+  test('items are placed in seq order; first ready becomes current', async () => {
+    const rel = gate(['a.png', 'b.png', 'c.png'])
+    const p = actions().addFiles(['a.png', 'b.png', 'c.png'].map((n) => makeFile(n)))
+    await tick()
+    rel.get('c.png')!()
+    await tick()
+    let st = useBatchStore.getState()
+    expect(st.items.map((i) => i.meta.name)).toEqual(['c.png'])
+    expect(st.uploads.map((u) => u.name)).toEqual(['a.png', 'b.png'])
+    expect(st.currentId).toBe(st.items[0].id)
+    const firstId = st.items[0].id
+    rel.get('a.png')!()
+    rel.get('b.png')!()
+    await p
+    st = useBatchStore.getState()
+    expect(st.items.map((i) => i.meta.name)).toEqual(['a.png', 'b.png', 'c.png'])
+    expect(st.currentId).toBe(firstId)
+  })
+
+  test('item is removing while auto removal runs, then false', async () => {
+    let release!: () => void
+    const g = new Promise<void>((res) => (release = res))
+    vi.mocked(runPixelTask).mockImplementation(async (task) => {
+      await g
+      return runTask(task)
+    })
+    const p = actions().addFiles([makeFile('opaque-a.png')])
+    await tick()
+    const placed = useBatchStore.getState().items
+    expect(placed).toHaveLength(1)
+    expect(placed[0].removing).toBe(true)
+    expect(useBatchStore.getState().uploads).toHaveLength(0)
+    release()
+    await p
+    const done = useBatchStore.getState().items[0]
+    expect(done.removing).toBe(false)
+    expect(done.mask).not.toBeNull()
+  })
+
+  test('cancelUpload removes a queued slot, never decodes it, and is not a rejection', async () => {
+    const rel = gate(['a.png', 'b.png', 'c.png', 'd.png'])
+    const p = actions().addFiles(['a.png', 'b.png', 'c.png', 'd.png'].map((n) => makeFile(n)))
+    await tick()
+    const { uploads } = useBatchStore.getState()
+    actions().cancelUpload(uploads[0].id) // decoding: no effect
+    expect(useBatchStore.getState().uploads).toHaveLength(4)
+    actions().cancelUpload(uploads[3].id)
+    actions().cancelUpload('nope')
+    expect(useBatchStore.getState().uploads.map((u) => u.name)).toEqual(['a.png', 'b.png', 'c.png'])
+    rel.forEach((r) => r())
+    const { rejected } = await p
+    expect(rejected).toEqual([])
+    expect(useBatchStore.getState().lastRejected).toEqual([])
+    expect(vi.mocked(decodeForBatch).mock.calls.some((c) => (c[0] as File).name === 'd.png')).toBe(false)
+    expect(useBatchStore.getState().items.map((i) => i.meta.name)).toEqual(['a.png', 'b.png', 'c.png'])
+  })
+
+  test('decode failure removes the slot and appends to earlier rejections', async () => {
+    decodeCtl.failNames.add('bad.png')
+    const { rejected } = await actions().addFiles(['a.png', 'bad.png', 'c.png', 'd.png', 'e.png'].map((n) => makeFile(n)))
+    expect(rejected).toEqual([
+      { name: 'e.png', reason: 'batch.tooMany' },
+      { name: 'bad.png', reason: 'upload.decodeFailed' },
+    ])
+    expect(useBatchStore.getState().lastRejected).toEqual(rejected)
+    expect(useBatchStore.getState().uploads).toHaveLength(0)
+    expect(useBatchStore.getState().items.map((i) => i.meta.name)).toEqual(['a.png', 'c.png', 'd.png'])
+  })
+
+  test('concurrent 3 + 3 keeps the first 4 by selection order regardless of finish order', async () => {
+    const names = ['a1', 'a2', 'a3', 'b1', 'b2', 'b3'].map((n) => `${n}.png`)
+    const rel = gate(names)
+    const p1 = actions().addFiles(names.slice(0, 3).map((n) => makeFile(n)))
+    const p2 = actions().addFiles(names.slice(3).map((n) => makeFile(n)))
+    await tick()
+    ;[...names].reverse().forEach((n) => rel.get(n)!())
+    await Promise.all([p1, p2])
+    expect(useBatchStore.getState().items.map((i) => i.meta.name)).toEqual(['a1.png', 'a2.png', 'a3.png', 'b1.png'])
+  })
+
+  test('clear empties uploads and in-flight decodes are discarded', async () => {
+    const rel = gate(['a.png', 'b.png', 'c.png', 'd.png'])
+    const p = actions().addFiles(['a.png', 'b.png', 'c.png', 'd.png'].map((n) => makeFile(n)))
+    await tick()
+    actions().clear()
+    expect(useBatchStore.getState().uploads).toEqual([])
+    rel.forEach((r) => r())
+    await p
+    expect(useBatchStore.getState().items).toEqual([])
+    expect(useBatchStore.getState().uploads).toEqual([])
+    expect(useBatchStore.getState().lastRejected).toEqual([])
+    expect(vi.mocked(decodeForBatch).mock.calls.some((c) => (c[0] as File).name === 'd.png')).toBe(false)
   })
 })

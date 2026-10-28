@@ -44,6 +44,8 @@ function makeItem(overrides: Partial<BatchItem> = {}): BatchItem {
     },
     status: 'pending',
     selected: true,
+    seq: 0,
+    removing: false,
     ...overrides,
   }
 }
