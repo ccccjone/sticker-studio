@@ -41,7 +41,9 @@ function RouteErrorCard({ reset }: { reset: () => void }) {
   const { t } = useTranslation()
   const { pathname } = useLocation()
   const navigate = useNavigate()
-  const clear = CLEAR_BY_PATH[pathname]
+  // 路由匹配忽略尾斜杠与大小写，查表前同样规范化
+  const route = pathname.replace(/\/+$/, '').toLowerCase() || '/'
+  const clear = CLEAR_BY_PATH[route]
   return (
     <div role="alert" className="mx-auto mt-10 max-w-md rounded-2xl border border-zinc-200 bg-white p-6 text-center shadow-sm">
       <h1 className="text-lg font-bold text-zinc-900">{t('errorBoundary.title')}</h1>
@@ -62,13 +64,9 @@ function RouteErrorCard({ reset }: { reset: () => void }) {
             {t('errorBoundary.reset')}
           </Button>
         )}
-        {pathname !== '/' && (
-          <Button
-            onClick={() => {
-              void navigate('/')
-              reset()
-            }}
-          >
+        {route !== '/' && (
+          // 不调用 reset：navigate 在 transition 里生效，先 reset 会让出错页多渲染一次；换路由后 key 变化自然复位
+          <Button onClick={() => void navigate('/')}>
             {t('errorBoundary.home')}
           </Button>
         )}

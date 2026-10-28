@@ -9,7 +9,9 @@ import i18n from '../i18n'
 import { Layout } from '../Layout'
 
 let shouldThrow = true
+const renders: string[] = []
 function Boom({ label = 'ok-content' }: { label?: string }) {
+  renders.push(label)
   if (shouldThrow) throw new Error('SECRET-BOOM-MESSAGE')
   return <div>{label}</div>
 }
@@ -102,6 +104,20 @@ describe('route-level error boundary', () => {
     shouldThrow = false
     fireEvent.click(screen.getByRole('button', { name: '返回首页' }))
     expect(screen.getByText('home-content')).toBeInTheDocument()
+  })
+
+  test('home button does not re-render the broken route before leaving it', async () => {
+    renderAt('/single')
+    shouldThrow = false
+    renders.length = 0
+    fireEvent.click(screen.getByRole('button', { name: '返回首页' }))
+    expect(await screen.findByText('home-content')).toBeInTheDocument()
+    expect(renders).not.toContain('ok-content')
+  })
+
+  test.each(['/batch/', '/Batch'])('reset button still shows for %s', (path) => {
+    renderAt(path)
+    expect(resetBtn()).toBeInTheDocument()
   })
 
   test('no home button when already on /', () => {
