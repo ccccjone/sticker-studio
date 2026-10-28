@@ -27,19 +27,39 @@ function BatchEditorBridge({ children }: { children: ReactNode }) {
   const canRedo = useBatchStore((s) => s.redoStack.length > 0)
   const item = items.find((it) => it.id === currentId) ?? null
 
-  return <EditorContext.Provider value={{ item, actions, canUndo, canRedo }}>{children}</EditorContext.Provider>
+  return (
+    <EditorContext.Provider value={{ item, actions, canUndo, canRedo }}>
+      {children}
+    </EditorContext.Provider>
+  )
 }
 
 function BatchWorkspace() {
   const items = useBatchStore((s) => s.items)
+  const uploads = useBatchStore((s) => s.uploads)
   const actions = useBatchStore((s) => s.actions)
+  const { t } = useTranslation()
 
-  if (items.length === 0) {
+  if (items.length === 0 && uploads.length === 0) {
     return (
       <div className="mx-auto max-w-2xl">
         <UploadDropzone multiple onFiles={(files) => actions.addFiles(files)} />
         <div className="mt-3">
           <RejectedNotice />
+        </div>
+      </div>
+    )
+  }
+
+  if (items.length === 0) {
+    return (
+      <div>
+        <RejectedNotice />
+        <div className="flex flex-col gap-4 lg:flex-row">
+          <ThumbnailList />
+          <div className="flex min-h-64 flex-1 items-center justify-center rounded-2xl border border-dashed border-zinc-300 text-sm text-zinc-500">
+            {t('batch.loadingPlaceholder')}
+          </div>
         </div>
       </div>
     )

@@ -144,6 +144,12 @@
     "title": "批量处理图片",
     "tooMany": "已超过单次批量 4 张的上限，超出部分未加入列表",
     "dismissNotice": "关闭提示",
+    "loadingPlaceholder": "正在加载图片…",
+    "stage": {
+      "queued": "排队中",
+      "decoding": "解码中",
+      "removing": "去背景"
+    },
     "status": {
       "pending": "未处理",
       "edited": "已编辑",
@@ -154,7 +160,8 @@
       "selectAll": "全选",
       "count": "{{count}} / {{max}} 张",
       "select": "选中 {{name}}",
-      "remove": "移除 {{name}}"
+      "remove": "移除 {{name}}",
+      "cancel": "取消 {{name}}"
     },
     "toolbar": {
       "scope": "应用范围",

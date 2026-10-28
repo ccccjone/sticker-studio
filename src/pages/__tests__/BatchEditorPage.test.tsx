@@ -19,7 +19,7 @@ const { BatchEditorPage } = await import('../BatchEditorPage')
 describe('BatchEditorPage', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('zh')
-    useBatchStore.setState({ items: [], currentId: null, undoStack: [], redoStack: [], lastRejected: [] })
+    useBatchStore.setState({ items: [], uploads: [], currentId: null, undoStack: [], redoStack: [], lastRejected: [] })
   })
   afterEach(cleanup)
 
@@ -60,5 +60,14 @@ describe('BatchEditorPage', () => {
     useBatchStore.setState({ lastRejected: [{ name: 'bad.gif', reason: 'upload.unsupportedType' }] })
     render(<BatchEditorPage />)
     expect(screen.getAllByRole('alert')).toHaveLength(1)
+  })
+
+  test('with only upload slots it shows the list instead of the dropzone', () => {
+    useBatchStore.setState({
+      uploads: [{ id: 'u1', seq: 1, name: 'loading.png', stage: 'queued', thumb: null }],
+    })
+    render(<BatchEditorPage />)
+    expect(screen.getByText('loading.png')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '选择图片' })).not.toBeInTheDocument()
   })
 })

@@ -144,6 +144,12 @@
     "title": "Batch Processing",
     "tooMany": "You can add up to 4 images at once; the rest were not added.",
     "dismissNotice": "Dismiss",
+    "loadingPlaceholder": "Loading images…",
+    "stage": {
+      "queued": "Queued",
+      "decoding": "Decoding",
+      "removing": "Removing background"
+    },
     "status": {
       "pending": "Pending",
       "edited": "Edited",
@@ -154,7 +160,8 @@
       "selectAll": "Select all",
       "count": "{{count}} / {{max}}",
       "select": "Select {{name}}",
-      "remove": "Remove {{name}}"
+      "remove": "Remove {{name}}",
+      "cancel": "Cancel {{name}}"
     },
     "toolbar": {
       "scope": "Apply to",
