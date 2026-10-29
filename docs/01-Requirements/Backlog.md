@@ -18,7 +18,7 @@ MVP 之后的候选工作。每项启动前按风险分级走 spec → plan 流�
 
 1. B1 内存修复 + B7 加载体验 + B5 错误边界（2026-10-28 用户：先 refine，再上线） —— **已完成**（2026-10-28，见 docs/04-Plans/2026-10-28-{batch-memory-budget,batch-loading-ux,error-boundary}.md）
 2. ~~C10 AI 创作；上线改为 Vercel（ADR 0002）~~ —— 2026-10-28 移出本项目（见 D1），上线仍按 A1 的 GitHub Pages 方案
-3. B3 代码分割（为 C1 铺路）
+3. B3 代码分割（为 C1 铺路） —— **已完成**（2026-10-28，入口 gzip 259 KB → 108 KB，见 docs/04-Plans/2026-10-28-code-splitting.md）
 4. C1 本地 AI 去背景 → C3 defringe → C2 自动拆分
 5. 其余条目逐项确认后推进
 
@@ -37,7 +37,7 @@ MVP 之后的候选工作。每项启动前按风险分级走 spec → plan 流�
 |---|---|---|---|
 | B1 | 批量上传内存峰值（**高优，可能崩溃**） | `batchStore.ts` 用 `Promise.all` 同时解码全部文件；上限 50 张；单张无像素上限（20MB JPEG 可达 8000²≈250MB） | 2026-10-28 用户要求：降低单批张数（如 9）+ 峰值内存预算上限；限并发解码、单张最长边上限、原图只留压缩文件导出时重解码。参数在[决策台](https://claude.ai/artifact/KMQgsKFYx2tDuNCYEPe7hW)敲定 |
 | B2 | 重像素运算移入 Worker | 仅 `colorTolerance` 走 `runPixelTask`；描边与导出合成在主线程 | 扩展 `pixelTasks.ts` 覆盖描边与导出；buffer 用 transfer；保留主线程降级 |
-| B3 | 代码分割 | 单个 `index-*.js` ≈ 829KB | 路由级 `React.lazy`；Konva / JSZip 按需加载；为 AI 模型预留懒加载路径；给出前后 bundle 对比 |
+| B3 | 代码分割（**已完成** 2026-10-28） | 单个 `index-*.js` ≈ 829KB | 路由级 `React.lazy`；Konva / JSZip 按需加载；为 AI 模型预留懒加载路径；给出前后 bundle 对比 |
 | B4 | 重复的蒙版 / 撤销逻辑 | 三个 store 的笔刷 undo/redo 实现相似 | `refactor-flow` 抽公共 mask-history 模块，测试先锁定现有行为 |
 | B5 | 错误边界 | 无 ErrorBoundary，异常整页白屏 | 路由级 ErrorBoundary + 中英文案 +「重置当前项目」 |
 | B7 | 加载体验 | 上传后到全部解码完成前无逐张反馈 | 立即出现占位格 + 阶段状态（排队 / 解码 / 去背景 / 完成）、低清缩略图先行、逐张就位；样式在决策台选定 |
