@@ -1,6 +1,8 @@
+import { Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, NavLink, Outlet } from 'react-router'
 import { Icon } from '../components/Icon'
+import { Spinner } from '../components/Spinner'
 import { DevCrash } from './DevCrash'
 import { RouteErrorBoundary } from './ErrorBoundary'
 
@@ -79,7 +81,16 @@ export function Layout() {
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">
         <RouteErrorBoundary>
           {import.meta.env.DEV && <DevCrash at="route" />}
-          <Outlet />
+          {/* 页面懒加载（B3）：占位只占 main，导航栏不动；chunk 加载失败由外层错误边界接住 */}
+          <Suspense
+            fallback={
+              <div className="flex justify-center py-16">
+                <Spinner size={20} label={t('app.loadingPage')} />
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
         </RouteErrorBoundary>
       </main>
       <footer className="border-t border-zinc-200 bg-white">

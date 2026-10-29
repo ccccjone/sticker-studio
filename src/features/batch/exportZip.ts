@@ -4,7 +4,6 @@
  * single-item download path shared by the per-item ExportPanel button.
  */
 
-import JSZip from 'jszip'
 import { downloadBlob, encodeRaster } from '../../canvas/encode'
 import { renderExport } from '../../canvas/renderExport'
 import { buildManifest, type ManifestFile } from '../../core/export'
@@ -36,6 +35,8 @@ export function selectExportTargets(items: BatchItem[], scope: BatchScope): Batc
 /** Serial queue: renders/encodes one item at a time, never in parallel. */
 export async function exportBatchZip(items: BatchItem[], scope: 'all' | 'selected'): Promise<BatchZipResult> {
   const targets = selectExportTargets(items, scope)
+  // 按需加载：点击导出时才下载 JSZip（B3）
+  const { default: JSZip } = await import('jszip')
   const zip = new JSZip()
   const used = new Set<string>()
   const files: ManifestFile[] = []

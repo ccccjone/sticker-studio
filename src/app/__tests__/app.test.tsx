@@ -39,8 +39,9 @@ describe('app shell', () => {
     expect(localStorage.getItem('i18nextLng')).toBe('en')
   })
 
-  test.each(['/single', '/batch', '/split', '/guide'])('route %s renders', (path) => {
+  test.each(['/single', '/batch', '/split', '/guide'])('route %s renders', async (path) => {
     renderAt(path)
-    expect(screen.getAllByRole('heading').length).toBeGreaterThan(0)
+    // 工作页懒加载（B3）
+    expect((await screen.findAllByRole('heading')).length).toBeGreaterThan(0)
   })
 })

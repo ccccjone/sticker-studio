@@ -2,9 +2,6 @@ import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router'
 import { Button } from '../components/Button'
-import { useBatchStore } from '../features/batch/batchStore'
-import { useEditorStore } from '../features/editor/editorStore'
-import { useSplitterStore } from '../features/splitter/splitterStore'
 
 interface ErrorBoundaryProps {
   fallback: (reset: () => void) => ReactNode
@@ -30,11 +27,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, { failed: boole
   }
 }
 
-/** pathname（已去掉 basename）→ 该页面对应 store 的 clear。 */
-const CLEAR_BY_PATH: Record<string, () => void> = {
-  '/single': () => useEditorStore.getState().actions.clear(),
-  '/batch': () => useBatchStore.getState().actions.clear(),
-  '/split': () => useSplitterStore.getState().actions.clear(),
+/**
+ * pathname（已去掉 basename）→ 该页面对应 store 的 clear。
+ * 动态 import：入口包不静态依赖 store（store 会带上 JSZip 等页面依赖，见 B3）。
+ */
+const CLEAR_BY_PATH: Record<string, () => Promise<void>> = {
+  '/single': () => import('../features/editor/editorStore').then((m) => m.useEditorStore.getState().actions.clear()),
+  '/batch': () => import('../features/batch/batchStore').then((m) => m.useBatchStore.getState().actions.clear()),
+  '/split': () => import('../features/splitter/splitterStore').then((m) => m.useSplitterStore.getState().actions.clear()),
 }
 
 function RouteErrorCard({ reset }: { reset: () => void }) {
@@ -57,8 +57,7 @@ function RouteErrorCard({ reset }: { reset: () => void }) {
             variant="danger"
             onClick={() => {
               if (!window.confirm(t('editor.clearConfirm'))) return
-              clear()
-              reset()
+              void clear().then(reset)
             }}
           >
             {t('errorBoundary.reset')}

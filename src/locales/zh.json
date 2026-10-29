@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "Sticker Studio",
-    "tagline": "表情包工坊"
+    "tagline": "表情包工坊",
+    "loadingPage": "正在加载…"
   },
   "nav": {
     "home": "首页",

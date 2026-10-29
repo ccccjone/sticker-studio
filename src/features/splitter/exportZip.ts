@@ -5,7 +5,6 @@
  * sync with the active naming rule / manual overrides).
  */
 
-import JSZip from 'jszip'
 import { downloadBlob, encodeRaster } from '../../canvas/encode'
 import { renderExport } from '../../canvas/renderExport'
 import { buildManifest, type ManifestFile } from '../../core/export'
@@ -37,6 +36,8 @@ export function selectedPieces(pieces: SplitterPiece[]): SplitterPiece[] {
 /** Serial queue: renders/encodes one piece at a time, never in parallel (bounds memory). */
 export async function exportSplitZip(pieces: SplitterPiece[]): Promise<SplitZipResult> {
   const targets = selectedPieces(pieces)
+  // 按需加载：点击导出时才下载 JSZip（B3）
+  const { default: JSZip } = await import('jszip')
   const zip = new JSZip()
   const used = new Set<string>()
   const files: ManifestFile[] = []

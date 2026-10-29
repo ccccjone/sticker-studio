@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "Sticker Studio",
-    "tagline": "Sticker Workshop"
+    "tagline": "Sticker Workshop",
+    "loadingPage": "Loading…"
   },
   "nav": {
     "home": "Home",

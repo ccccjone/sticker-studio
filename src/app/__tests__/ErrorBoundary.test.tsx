@@ -68,7 +68,7 @@ describe('route-level error boundary', () => {
     ['/single', () => useEditorStore.getState().actions],
     ['/batch', () => useBatchStore.getState().actions],
     ['/split', () => useSplitterStore.getState().actions],
-  ])('reset on %s clears only its own store', (path, getActions) => {
+  ])('reset on %s clears only its own store', async (path, getActions) => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     const spies = [
       vi.spyOn(useEditorStore.getState().actions, 'clear'),
@@ -78,11 +78,12 @@ describe('route-level error boundary', () => {
     renderAt(path)
     shouldThrow = false
     fireEvent.click(resetBtn()!)
+    // store 动态 import，清除完成后才复位
+    expect(await screen.findByText('ok-content')).toBeInTheDocument()
     const own = spies.filter((s) => getActions().clear === (s as unknown))
     expect(own.length).toBe(1)
     expect(own[0]).toHaveBeenCalledTimes(1)
     expect(spies.filter((s) => s.mock.calls.length > 0)).toHaveLength(1)
-    expect(screen.getByText('ok-content')).toBeInTheDocument()
   })
 
   test('reset declined keeps card and does not clear', () => {
