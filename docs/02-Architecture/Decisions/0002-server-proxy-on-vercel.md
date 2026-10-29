@@ -1,7 +1,9 @@
 # ADR 0002: 引入服务端代理，整站部署迁到 Vercel
 
 **Date:** 2026-10-28
-**Status:** Proposed
+**Status:** Deprecated（未采纳，2026-10-28）
+
+> AI 创作（C10）随风格 Skill 生成器（Backlog D1）迁到独立新产品，本项目保持纯静态、零后端，部署仍按 GitHub Pages。本 ADR 的服务端代理思路（token 只在服务端、HMAC 访问密钥、handler 与平台解耦、构建后扫描 dist 防泄露）可供新产品参考。
 
 ## Context
 
